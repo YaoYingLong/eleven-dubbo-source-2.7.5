@@ -1,0 +1,3 @@
+red=com.eleven.icode.RedCar
+black=com.eleven.icode.BlackCar
+com.eleven.icode.CarWrapper

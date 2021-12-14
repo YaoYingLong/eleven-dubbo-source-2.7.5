@@ -89,12 +89,10 @@ public class AdaptiveClassCodeGenerator {
         if (!hasAdaptiveMethod()) {
             throw new IllegalStateException("No adaptive method exist on extension " + type.getName() + ", refuse to create the adaptive class!");
         }
-
         StringBuilder code = new StringBuilder();
         code.append(generatePackageInfo());
         code.append(generateImports());
         code.append(generateClassDeclaration());
-
         // 遍历接口中的方法，生成代理方法
         Method[] methods = type.getMethods();
         for (Method method : methods) {
@@ -203,41 +201,29 @@ public class AdaptiveClassCodeGenerator {
         StringBuilder code = new StringBuilder(512);
         if (adaptiveAnnotation == null) {
             return generateUnsupported(method);
-        } else {
-            // 方法中URL类型参数的下标
+        } else { // 方法中URL类型参数的下标
             int urlTypeIndex = getUrlTypeIndex(method);
-
             // found parameter in URL type
             // 寻找URL
             // 1. 如果当前方法中有URl类型的参数，那么url就是该参数值
             // 2. 如果当前方法中没有URL类型的参数，但是当前方法中有某个类型中的get方法返回了URl类型，那么就调用那个get方法得到一个url对象
-            if (urlTypeIndex != -1) {
-                // Null Point check
+            if (urlTypeIndex != -1) {// Null Point check
                 code.append(generateUrlNullCheck(urlTypeIndex));
-            } else {
-                // did not find parameter in URL type
+            } else {// did not find parameter in URL type
                 code.append(generateUrlAssignmentIndirectly(method));
             }
-
             // 根据这个value去找具体的扩展类
             String[] value = getMethodAdaptiveValue(adaptiveAnnotation);
-
             // 方法中有Invocation类型的参数
             boolean hasInvocation = hasInvocationArgument(method);
-
             code.append(generateInvocationArgumentNullCheck(method));
-
-
             code.append(generateExtNameAssignment(value, hasInvocation));
             // check extName == null?
             code.append(generateExtNameNullCheck(value));
-
             code.append(generateExtensionAssignment());
-
             // return statement
             code.append(generateReturnAndInvocation(method));
         }
-
         return code.toString();
     }
 
@@ -289,7 +275,6 @@ public class AdaptiveClassCodeGenerator {
                 }
             }
         }
-
         return String.format(CODE_EXT_NAME_ASSIGNMENT, getNameCode);
     }
 

@@ -66,38 +66,29 @@ public class SpringExtensionFactory implements ExtensionFactory {
     }
 
 
-    // 从Spring容器中获取bean
-    // 先根据name拿，再根据类型拿
+    // 从Spring容器中获取bean， 先根据name拿，再根据类型拿
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getExtension(Class<T> type, String name) {
-
         //SPI should be get from SpiExtensionFactory
-        // 如果接口上存在SPI注解，就不从spring中获取对象实例了
         if (type.isInterface() && type.isAnnotationPresent(SPI.class)) {
-            return null;
+            return null; // 若接口上存在SPI注解，就不从Spring中获取对象实例了
         }
-
-        // 从ApplicationContext中获取bean, byname
         for (ApplicationContext context : CONTEXTS) {
             if (context.containsBean(name)) {
-                Object bean = context.getBean(name);
+                Object bean = context.getBean(name); // 从ApplicationContext中获取bean, byname
                 if (type.isInstance(bean)) {
                     return (T) bean;
                 }
             }
         }
-
         logger.warn("No spring extension (bean) named:" + name + ", try to find an extension (bean) of type " + type.getName());
-
         if (Object.class == type) {
             return null;
         }
-
-        // byType
         for (ApplicationContext context : CONTEXTS) {
             try {
-                return context.getBean(type);
+                return context.getBean(type); // byType
             } catch (NoUniqueBeanDefinitionException multiBeanExe) {
                 logger.warn("Find more than 1 spring extensions (beans) of type " + type.getName() + ", will stop auto injection. Please make sure you have specified the concrete parameter type and there's only one extension of that type.");
             } catch (NoSuchBeanDefinitionException noBeanExe) {
@@ -106,9 +97,7 @@ public class SpringExtensionFactory implements ExtensionFactory {
                 }
             }
         }
-
         logger.warn("No spring extension (bean) named:" + name + ", type:" + type.getName() + " found, stop get bean.");
-
         return null;
     }
 

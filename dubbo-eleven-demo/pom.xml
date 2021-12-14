@@ -9,8 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>dubbo-eleven</artifactId>
-
+    <artifactId>dubbo-eleven-demo</artifactId>
 
     <dependencies>
         <dependency>
@@ -40,6 +39,11 @@
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo-rpc-api</artifactId>
             <version>2.7.5-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-config-spring</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

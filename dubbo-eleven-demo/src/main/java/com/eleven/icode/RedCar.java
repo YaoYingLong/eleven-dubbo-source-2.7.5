@@ -19,4 +19,8 @@ public class RedCar implements Car {
     public String sayHell() {
         return null;
     }
+
+    public void setUserService(UserService userService) {
+        this.userService = userService;
+    }
 }

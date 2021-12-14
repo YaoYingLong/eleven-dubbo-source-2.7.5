@@ -2,6 +2,7 @@ package com.eleven.icode;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.rpc.Protocol;
 
 public class SpiTest {
     public static void main(String[] args) {
@@ -11,23 +12,18 @@ public class SpiTest {
 //            System.out.println(car.getCarName(null));
 //        }
 
-
 //        ExtensionLoader<Protocol> extensionLoader = ExtensionLoader.getExtensionLoader(Protocol.class);
-//        Protocol protocol = extensionLoader.getExtension("http");
+//        Protocol protocol = extensionLoader.getExtension("dubbo");
 //        System.out.println(protocol);
 
 //        ExtensionLoader<Car> extensionLoader = ExtensionLoader.getExtensionLoader(Car.class);
-//
-//        Car car = extensionLoader.getExtension("true"); // 自动注入，AOP
-//
-//        System.out.println(car.getCarName());
+//        Car car = extensionLoader.getExtension("red"); // 自动注入，AOP
+//        System.out.println(car.getCarName(null));
 
         ExtensionLoader<Person> extensionLoader = ExtensionLoader.getExtensionLoader(Person.class);
         Person person = extensionLoader.getExtension("black");  // BlackPerson
-
-        URL url = new URL("x", "localhost", 8080);
+        URL url = new URL(null, null, -1);
         url = url.addParameter("car", "black");
-
         System.out.println(person.getCar().getCarName(url));  // 代理逻辑
 
 

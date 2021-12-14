@@ -80,15 +80,11 @@ public class BeanFactoryUtils {
      * @since 2.6.6
      */
     public static <T> T getOptionalBean(ListableBeanFactory beanFactory, String beanName, Class<T> beanType) {
-
         String[] allBeanNames = beanNamesForTypeIncludingAncestors(beanFactory, beanType);
-
         if (!containsElement(allBeanNames, beanName)) {
             return null;
         }
-
         Map<String, T> beansOfType = beansOfTypeIncludingAncestors(beanFactory, beanType);
-
         return beansOfType.get(beanName);
 
     }
@@ -105,21 +101,16 @@ public class BeanFactoryUtils {
      * @since 2.6.6
      */
     public static <T> List<T> getBeans(ListableBeanFactory beanFactory, String[] beanNames, Class<T> beanType) {
-
         if (isEmpty(beanNames)) {
             return emptyList();
         }
-
         String[] allBeanNames = beanNamesForTypeIncludingAncestors(beanFactory, beanType);
-
         List<T> beans = new ArrayList<T>(beanNames.length);
-
         for (String beanName : beanNames) {
             if (containsElement(allBeanNames, beanName)) {
                 beans.add(beanFactory.getBean(beanName, beanType));
             }
         }
-
         return Collections.unmodifiableList(beans);
     }
 }

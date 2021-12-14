@@ -70,9 +70,7 @@ import static org.springframework.core.BridgeMethodResolver.isVisibilityBridgeMe
  * @revision 2.7.3 Uses {@link AnnotationAttributes} instead of {@link Annotation}
  * @since 2.6.6
  */
-public abstract class AnnotationInjectedBeanPostProcessor extends
-        InstantiationAwareBeanPostProcessorAdapter implements MergedBeanDefinitionPostProcessor, PriorityOrdered,
-        BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware, DisposableBean {
+public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware, BeanClassLoaderAware, EnvironmentAware, DisposableBean {
 
     private final static int CACHE_SIZE = Integer.getInteger("", 32);
 
@@ -139,18 +137,15 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
     }
 
     @Override
-    public PropertyValues postProcessPropertyValues(
-            PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
-
-        // 寻找需要注入的属性（被@Reference标注的Field）
+    public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
+        // 寻找需要注入的属性即被@Reference标注的Field
         InjectionMetadata metadata = findInjectionMetadata(beanName, bean.getClass(), pvs);
         try {
             metadata.inject(bean, beanName, pvs);
         } catch (BeanCreationException ex) {
             throw ex;
         } catch (Throwable ex) {
-            throw new BeanCreationException(beanName, "Injection of @" + getAnnotationType().getSimpleName()
-                    + " dependencies is failed", ex);
+            throw new BeanCreationException(beanName, "Injection of @" + getAnnotationType().getSimpleName() + " dependencies is failed", ex);
         }
         return pvs;
     }
@@ -163,29 +158,21 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
      * @return non-null {@link List}
      */
     private List<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> findFieldAnnotationMetadata(final Class<?> beanClass) {
-
         final List<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> elements = new LinkedList<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement>();
-
-        ReflectionUtils.doWithFields(beanClass, field -> {
-
-            for (Class<? extends Annotation> annotationType : getAnnotationTypes()) {
-
+        ReflectionUtils.doWithFields(beanClass, field -> { // 遍历beanClass的所有属性
+            for (Class<? extends Annotation> annotationType : getAnnotationTypes()) { // 遍历注解列表：Reference.class, com.alibaba.dubbo.config.annotation.Reference.class
                 AnnotationAttributes attributes = getMergedAttributes(field, annotationType, getEnvironment(), true);
-
-                if (attributes != null) {
-
+                if (attributes != null) { // 若该属性上目标注解属性存在
                     if (Modifier.isStatic(field.getModifiers())) {
                         if (logger.isWarnEnabled()) {
                             logger.warn("@" + annotationType.getName() + " is not supported on static fields: " + field);
                         }
-                        return;
+                        return; // 若为static方法直接跳过
                     }
-
                     elements.add(new AnnotatedFieldElement(field, attributes));
                 }
             }
         });
-
         return elements;
 
     }
@@ -197,22 +184,14 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
      * @return non-null {@link List}
      */
     private List<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> findAnnotatedMethodMetadata(final Class<?> beanClass) {
-
         final List<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> elements = new LinkedList<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement>();
-
         ReflectionUtils.doWithMethods(beanClass, method -> {
-
             Method bridgedMethod = findBridgedMethod(method);
-
             if (!isVisibilityBridgeMethodPair(method, bridgedMethod)) {
                 return;
             }
-
-
             for (Class<? extends Annotation> annotationType : getAnnotationTypes()) {
-
                 AnnotationAttributes attributes = getMergedAttributes(bridgedMethod, annotationType, getEnvironment(), true);
-
                 if (attributes != null && method.equals(ClassUtils.getMostSpecificMethod(method, beanClass))) {
                     if (Modifier.isStatic(method.getModifiers())) {
                         if (logger.isWarnEnabled()) {
@@ -222,8 +201,7 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
                     }
                     if (method.getParameterTypes().length == 0) {
                         if (logger.isWarnEnabled()) {
-                            logger.warn("@" + annotationType.getName() + " annotation should only be used on methods with parameters: " +
-                                    method);
+                            logger.warn("@" + annotationType.getName() + " annotation should only be used on methods with parameters: " + method);
                         }
                     }
                     // 找到set方法所对应的属性
@@ -232,17 +210,15 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
                 }
             }
         });
-
         return elements;
 
     }
 
 
     private AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata buildAnnotatedMetadata(final Class<?> beanClass) {
-
-        // 哪些Filed上有@Reference注解
+        // 获取beanClass中Filed上有@Reference注解Field列表
         Collection<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> fieldElements = findFieldAnnotationMetadata(beanClass);
-        // 哪些方法上有@Reference注解
+        // 获取beanClass中方法上有@Reference注解方法列表
         Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements = findAnnotatedMethodMetadata(beanClass);
         // 返回的是Dubbo定义的AnnotatedInjectionMetadata，接下来就会使用这个类去进行属性注入
         return new AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata(beanClass, fieldElements, methodElements);
@@ -355,23 +331,17 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
      * @return An injected object
      * @throws Exception If getting is failed
      */
-    protected Object getInjectedObject(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType,
-                                       InjectionMetadata.InjectedElement injectedElement) throws Exception {
+    protected Object getInjectedObject(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType, InjectionMetadata.InjectedElement injectedElement) throws Exception {
         // ServiceBean:org.apache.dubbo.demo.DemoService#source=private org.apache.dubbo.demo.DemoService org.apache.dubbo.demo.consumer.comp.DemoServiceComponent.demoService#attributes={parameters=[Ljava.lang.String;@42e25b0b}
         // 哪个Service应用了哪个类型的服务，通过什么方式引入的
         String cacheKey = buildInjectedObjectCacheKey(attributes, bean, beanName, injectedType, injectedElement);
         // cacheKey很鸡肋，属性名不一样的时候，cacheKey不一样，导致不能缓存， 在一个Service中@Reference两次同一个服务缓存不到
-
         Object injectedObject = injectedObjectsCache.get(cacheKey);
-
         if (injectedObject == null) {
-            // 生成Bean
-            injectedObject = doGetInjectedBean(attributes, bean, beanName, injectedType, injectedElement);
-
+            injectedObject = doGetInjectedBean(attributes, bean, beanName, injectedType, injectedElement); // 生成Bean
             // Customized inject-object if necessary
             injectedObjectsCache.putIfAbsent(cacheKey, injectedObject);
         }
-
         return injectedObject;
 
     }
@@ -423,8 +393,7 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
      */
     protected Map<InjectionMetadata.InjectedElement, Object> getInjectedFieldObjectsMap() {
 
-        Map<InjectionMetadata.InjectedElement, Object> injectedElementBeanMap =
-                new LinkedHashMap<InjectionMetadata.InjectedElement, Object>();
+        Map<InjectionMetadata.InjectedElement, Object> injectedElementBeanMap = new LinkedHashMap<InjectionMetadata.InjectedElement, Object>();
 
         for (AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata metadata : injectionMetadataCache.values()) {
 
@@ -477,8 +446,7 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
 
         private final Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements;
 
-        public AnnotatedInjectionMetadata(Class<?> targetClass, Collection<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> fieldElements,
-                                          Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements) {
+        public AnnotatedInjectionMetadata(Class<?> targetClass, Collection<AnnotationInjectedBeanPostProcessor.AnnotatedFieldElement> fieldElements, Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements) {
             super(targetClass, combine(fieldElements, methodElements));
             this.fieldElements = fieldElements;
             this.methodElements = methodElements;
@@ -512,17 +480,12 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
 
         @Override
         protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
-
             // set方法对应的属性的类型
             Class<?> injectedType = pd.getPropertyType();
-
             // 从Spring容器中获取一个Bean（注意，这个方法内部会生成Bean而且会缓存，就像Spring中的getBean一样）
             Object injectedObject = getInjectedObject(attributes, bean, beanName, injectedType, this);
-
             ReflectionUtils.makeAccessible(method);
-
-            // 调用set方法
-            method.invoke(bean, injectedObject);
+            method.invoke(bean, injectedObject);  // 调用set方法
 
         }
 
@@ -548,17 +511,11 @@ public abstract class AnnotationInjectedBeanPostProcessor extends
         @Override
         protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
             // 给bean对象进行属性赋值
-
             Class<?> injectedType = field.getType();
-
             // 获取对象，然后进行注入
             Object injectedObject = getInjectedObject(attributes, bean, beanName, injectedType, this);
-
             ReflectionUtils.makeAccessible(field);
-
-            // 字段赋值，injectedObject就是值
-            field.set(bean, injectedObject);
-
+            field.set(bean, injectedObject); // 字段赋值，injectedObject就是值
         }
 
     }

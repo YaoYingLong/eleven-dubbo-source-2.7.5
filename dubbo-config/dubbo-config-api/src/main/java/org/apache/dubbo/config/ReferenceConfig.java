@@ -252,12 +252,10 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     public synchronized T get() {
         checkAndUpdateSubConfigs();
-
         if (destroyed) {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
-        if (ref == null) {
-            // 入口
+        if (ref == null) {// 入口
             init();
         }
         return ref;  // Invoke代理
@@ -284,20 +282,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (initialized) {
             return;
         }
-
         checkStubAndLocal(interfaceClass);
         checkMock(interfaceClass);
         Map<String, String> map = new HashMap<String, String>();
-
         map.put(SIDE_KEY, CONSUMER_SIDE);
-
         appendRuntimeParameters(map);
         if (!ProtocolUtils.isGeneric(getGeneric())) {
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put(REVISION_KEY, revision);
             }
-
             String[] methods = Wrapper.getWrapper(interfaceClass).getMethodNames();
             if (methods.length == 0) {
                 logger.warn("No method found in service interface " + interfaceClass.getName());
@@ -314,7 +308,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         // appendParameters(map, consumer, Constants.DEFAULT_KEY);
         appendParameters(map, consumer);
         appendParameters(map, this);
-
         Map<String, Object> attributes = null;
         if (CollectionUtils.isNotEmpty(methods)) {
             attributes = new HashMap<String, Object>();
@@ -327,11 +320,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         map.put(methodConfig.getName() + ".retries", "0");
                     }
                 }
-
                 attributes.put(methodConfig.getName(), convertMethodConfig2AsyncInfo(methodConfig));
             }
         }
-
         String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);
         if (StringUtils.isEmpty(hostToRegistry)) {
             hostToRegistry = NetUtils.getLocalHost();
@@ -339,10 +330,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             throw new IllegalArgumentException("Specified invalid registry ip from property:" + DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
         map.put(REGISTER_IP_KEY, hostToRegistry);
-
-        // 根据
-        ref = createProxy(map);
-
+        ref = createProxy(map); // 根据
         String serviceKey = URL.buildKey(interfaceName, group, version);
         ApplicationModel.initConsumerModel(serviceKey, buildConsumerModel(serviceKey, attributes));
         initialized = true;

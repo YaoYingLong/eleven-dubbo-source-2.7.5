@@ -73,19 +73,12 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
      * @throws Exception
      */
     public final C build() throws Exception {
-
         checkDependencies();
-
-        // 创建一个ReferenceBean对象
-        C configBean = doBuild();
-
-        // 给ReferenceBean对象的属性赋值
-        configureBean(configBean);
-
+        C configBean = doBuild(); // 创建一个ReferenceBean对象
+        configureBean(configBean); // 给ReferenceBean对象的属性赋值
         if (logger.isInfoEnabled()) {
             logger.info("The configBean[type:" + configBean.getClass().getSimpleName() + "] has been built.");
         }
-
         return configBean;
 
     }
@@ -103,19 +96,11 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
 
 
     protected void configureBean(C configBean) throws Exception {
-
-        // 把@Reference注解中的配置项赋值给configBean
-        preConfigureBean(attributes, configBean);
-
-
-        configureRegistryConfigs(configBean);
-
-        configureMonitorConfig(configBean);
-
-        configureApplicationConfig(configBean);
-
+        preConfigureBean(attributes, configBean); // 把@Reference注解中的配置项赋值给configBean
+        configureRegistryConfigs(configBean); // 把注册中心配置项赋值给configBean
+        configureMonitorConfig(configBean);// 把监控中心配置项赋值给configBean
+        configureApplicationConfig(configBean);// 把应用配置项赋值给configBean
         configureModuleConfig(configBean);
-
         // 设置applicationContext、interfaceName、consumer、methods属性，并调用ReferenceBean对象的afterPropertiesSet方法
         postConfigureBean(attributes, configBean);
 
@@ -125,49 +110,31 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
 
 
     private void configureRegistryConfigs(C configBean) {
-
-        // 解析@Refrence注解中配置的registry属性
-        String[] registryConfigBeanIds = resolveRegistryConfigBeanNames(attributes);
-
+        String[] registryConfigBeanIds = resolveRegistryConfigBeanNames(attributes); // 解析@Refrence注解中配置的registry属性
         // 获得注册中心对应的RegistryConfig对象
         List<RegistryConfig> registryConfigs = getBeans(applicationContext, registryConfigBeanIds, RegistryConfig.class);
-
-        // 设置
-        configBean.setRegistries(registryConfigs);
+        configBean.setRegistries(registryConfigs); // 设置registryConfigs属性值
 
     }
 
     private void configureMonitorConfig(C configBean) {
-
         String monitorBeanName = resolveMonitorConfigBeanName(attributes);
-
         // 从Spring容器获取MonitorConfig的bean对象
         MonitorConfig monitorConfig = getOptionalBean(applicationContext, monitorBeanName, MonitorConfig.class);
-
         configBean.setMonitor(monitorConfig);
 
     }
 
     private void configureApplicationConfig(C configBean) {
-
         String applicationConfigBeanName = resolveApplicationConfigBeanName(attributes);
-
-        ApplicationConfig applicationConfig =
-                getOptionalBean(applicationContext, applicationConfigBeanName, ApplicationConfig.class);
-
+        ApplicationConfig applicationConfig = getOptionalBean(applicationContext, applicationConfigBeanName, ApplicationConfig.class);
         configBean.setApplication(applicationConfig);
-
     }
 
     private void configureModuleConfig(C configBean) {
-
         String moduleConfigBeanName = resolveModuleConfigBeanName(attributes);
-
-        ModuleConfig moduleConfig =
-                getOptionalBean(applicationContext, moduleConfigBeanName, ModuleConfig.class);
-
+        ModuleConfig moduleConfig = getOptionalBean(applicationContext, moduleConfigBeanName, ModuleConfig.class);
         configBean.setModule(moduleConfig);
-
     }
 
     /**

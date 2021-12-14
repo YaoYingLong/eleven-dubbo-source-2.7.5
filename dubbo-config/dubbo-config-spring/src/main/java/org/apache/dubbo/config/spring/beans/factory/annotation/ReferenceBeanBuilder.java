@@ -33,9 +33,7 @@ import java.beans.PropertyEditorSupport;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.dubbo.config.spring.util.AnnotationUtils.getAttribute;
-import static org.apache.dubbo.config.spring.util.AnnotationUtils.getAttributes;
-import static org.apache.dubbo.config.spring.util.AnnotationUtils.resolveServiceInterfaceClass;
+import static org.apache.dubbo.config.spring.util.AnnotationUtils.*;
 import static org.apache.dubbo.config.spring.util.BeanFactoryUtils.getOptionalBean;
 import static org.apache.dubbo.config.spring.util.ObjectUtils.of;
 import static org.springframework.core.annotation.AnnotationAttributes.fromMap;
@@ -60,30 +58,20 @@ class ReferenceBeanBuilder extends AnnotatedInterfaceConfigBeanBuilder<Reference
         if (generic != null && generic) {
             // it's a generic reference
             String interfaceClassName = getAttribute(attributes, "interfaceName");
-            Assert.hasText(interfaceClassName,
-                    "@Reference interfaceName() must be present when reference a generic service!");
+            Assert.hasText(interfaceClassName, "@Reference interfaceName() must be present when reference a generic service!");
             referenceBean.setInterface(interfaceClassName);
             return;
         }
-
         Class<?> serviceInterfaceClass = resolveServiceInterfaceClass(attributes, interfaceClass);
-
-        Assert.isTrue(serviceInterfaceClass.isInterface(),
-                "The class of field or method that was annotated @Reference is not an interface!");
-
+        Assert.isTrue(serviceInterfaceClass.isInterface(), "The class of field or method that was annotated @Reference is not an interface!");
         referenceBean.setInterface(serviceInterfaceClass);
-
     }
 
 
     private void configureConsumerConfig(AnnotationAttributes attributes, ReferenceBean<?> referenceBean) {
-
         String consumerBeanName = getAttribute(attributes, "consumer");
-
         ConsumerConfig consumerConfig = getOptionalBean(applicationContext, consumerBeanName, ConsumerConfig.class);
-
         referenceBean.setConsumer(consumerConfig);
-
     }
 
     void configureMethodConfig(AnnotationAttributes attributes, ReferenceBean<?> referenceBean) {
@@ -104,34 +92,25 @@ class ReferenceBeanBuilder extends AnnotatedInterfaceConfigBeanBuilder<Reference
         Assert.notNull(interfaceClass, "The interface class must set first!");
         DataBinder dataBinder = new DataBinder(referenceBean);
         // Register CustomEditors for special fields
-
         // 去掉空格
         dataBinder.registerCustomEditor(String.class, "filter", new StringTrimmerEditor(true));
         dataBinder.registerCustomEditor(String.class, "listener", new StringTrimmerEditor(true));
-
-        // 你可以这么配@Reference(parameters = {"text=123"})
-        // 也可以这么配@Reference(parameters = {"text:123"})
-        // 最终都会转变为Map设置到referenceBean中的parameters
+        // 最终都会转变为Map设置到referenceBean中的parameters，@Reference(parameters = {"text=123"})或@Reference(parameters = {"text:123"})两种配置方式
         dataBinder.registerCustomEditor(Map.class, "parameters", new PropertyEditorSupport() {
             @Override
             public void setAsText(String text) throws java.lang.IllegalArgumentException {
-                // Trim all whitespace
-                String content = StringUtils.trimAllWhitespace(text);
+                String content = StringUtils.trimAllWhitespace(text);  // Trim all whitespace
                 if (!StringUtils.hasText(content)) { // No content , ignore directly
                     return;
                 }
-                // replace "=" to ","
-                content = StringUtils.replace(content, "=", ",");
-                // replace ":" to ","
-                content = StringUtils.replace(content, ":", ",");
+                content = StringUtils.replace(content, "=", ",");// replace "=" to ","
+                content = StringUtils.replace(content, ":", ","); // replace ":" to ","
                 // String[] to Map
                 Map<String, String> parameters = CollectionUtils.toStringMap(commaDelimitedListToStringArray(content));
                 setValue(parameters);
             }
         });
-
         // Bind annotation attributes
-        
         dataBinder.bind(new AnnotationPropertyValuesAdapter(attributes, applicationContext.getEnvironment(), IGNORE_FIELD_NAMES));
 
     }
@@ -159,17 +138,11 @@ class ReferenceBeanBuilder extends AnnotatedInterfaceConfigBeanBuilder<Reference
 
     @Override
     protected void postConfigureBean(AnnotationAttributes attributes, ReferenceBean bean) throws Exception {
-
         bean.setApplicationContext(applicationContext);
-
         configureInterface(attributes, bean);
-
         configureConsumerConfig(attributes, bean);
-
         configureMethodConfig(attributes, bean);
-
         bean.afterPropertiesSet();
-
     }
 
     @Deprecated

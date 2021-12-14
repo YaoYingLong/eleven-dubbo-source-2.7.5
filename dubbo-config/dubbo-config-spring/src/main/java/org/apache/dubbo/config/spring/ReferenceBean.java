@@ -86,21 +86,15 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public void afterPropertiesSet() throws Exception {
-        // 这个方法还是在给ReferenceBean对象的属性赋值
-
+    public void afterPropertiesSet() throws Exception {// 这个方法还是在给ReferenceBean对象的属性赋值
         if (applicationContext != null) {
             BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ConfigCenterBean.class, false, false);
         }
-
-        // 如果@Reference注解中没有配置consumer参数
-        if (getConsumer() == null) {
+        if (getConsumer() == null) { // 如果@Reference注解中没有配置consumer参数
             // 那么则从Spring容器中寻找ConsumerConfig类型的Bean, 比如通过@Bean定义了一个ConsumerConfig的Bean
             Map<String, ConsumerConfig> consumerConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ConsumerConfig.class, false, false);
-
             if (consumerConfigMap != null && consumerConfigMap.size() > 0) {
                 ConsumerConfig consumerConfig = null;
-
                 // 可能存在多个ConsumerConfig类型的Bean，遍历这些Bean，取第一个没有配置default或者default为true的Bean作为consumer的值
                 for (ConsumerConfig config : consumerConfigMap.values()) {
                     if (config.isDefault() == null || config.isDefault()) {
@@ -115,10 +109,7 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-
-
-        if (getApplication() == null
-                && (getConsumer() == null || getConsumer().getApplication() == null)) {
+        if (getApplication() == null && (getConsumer() == null || getConsumer().getApplication() == null)) {
             Map<String, ApplicationConfig> applicationConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ApplicationConfig.class, false, false);
             if (applicationConfigMap != null && applicationConfigMap.size() > 0) {
                 ApplicationConfig applicationConfig = null;
@@ -133,8 +124,7 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-        if (getModule() == null
-                && (getConsumer() == null || getConsumer().getModule() == null)) {
+        if (getModule() == null && (getConsumer() == null || getConsumer().getModule() == null)) {
             Map<String, ModuleConfig> moduleConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ModuleConfig.class, false, false);
             if (moduleConfigMap != null && moduleConfigMap.size() > 0) {
                 ModuleConfig moduleConfig = null;
@@ -151,9 +141,7 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-
-        // 如果@Reference注解上没有配置registryIds
-        // 那么则看application或consumer上有没有配置registryIds
+        // 如果@Reference注解上没有配置registryIds，那么则看application或consumer上有没有配置registryIds
         if (StringUtils.isEmpty(getRegistryIds())) {
             if (getApplication() != null && StringUtils.isNotEmpty(getApplication().getRegistryIds())) {
                 setRegistryIds(getApplication().getRegistryIds());
@@ -161,12 +149,9 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
             if (getConsumer() != null && StringUtils.isNotEmpty(getConsumer().getRegistryIds())) {
                 setRegistryIds(getConsumer().getRegistryIds());
             }
-
         }
 
-        if (CollectionUtils.isEmpty(getRegistries())
-                && (getConsumer() == null || CollectionUtils.isEmpty(getConsumer().getRegistries()))
-                && (getApplication() == null || CollectionUtils.isEmpty(getApplication().getRegistries()))) {
+        if (CollectionUtils.isEmpty(getRegistries()) && (getConsumer() == null || CollectionUtils.isEmpty(getConsumer().getRegistries())) && (getApplication() == null || CollectionUtils.isEmpty(getApplication().getRegistries()))) {
             Map<String, RegistryConfig> registryConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, RegistryConfig.class, false, false);
             if (registryConfigMap != null && registryConfigMap.size() > 0) {
                 List<RegistryConfig> registryConfigs = new ArrayList<>();
@@ -177,7 +162,6 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                         }
                     });
                 }
-
                 if (registryConfigs.isEmpty()) {
                     for (RegistryConfig config : registryConfigMap.values()) {
                         if (StringUtils.isEmpty(registryIds)) {
@@ -190,7 +174,6 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-
         if (getMetadataReportConfig() == null) {
             Map<String, MetadataReportConfig> metadataReportConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, MetadataReportConfig.class, false, false);
             if (metadataReportConfigMap != null && metadataReportConfigMap.size() == 1) {
@@ -200,24 +183,17 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 throw new IllegalStateException("Multiple MetadataReport configs: " + metadataReportConfigMap);
             }
         }
-
-        // 如果@Reference注解中没有配置configCenter属性
-        // 那么则从Spring容器中找ConfigCenterConfig类型的bean
+        // 如果@Reference注解中没有配置configCenter属性，那么则从Spring容器中找ConfigCenterConfig类型的bean
         if (getConfigCenter() == null) {
             Map<String, ConfigCenterConfig> configenterMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ConfigCenterConfig.class, false, false);
-
             // 只能配一个ConfigCenterConfig
-            if (configenterMap != null && configenterMap.size() == 1) {
-                // 设置进去
+            if (configenterMap != null && configenterMap.size() == 1) {// 设置进去
                 super.setConfigCenter(configenterMap.values().iterator().next());
             } else if (configenterMap != null && configenterMap.size() > 1) {
                 throw new IllegalStateException("Multiple ConfigCenter found:" + configenterMap);
             }
         }
-
-        if (getMonitor() == null
-                && (getConsumer() == null || getConsumer().getMonitor() == null)
-                && (getApplication() == null || getApplication().getMonitor() == null)) {
+        if (getMonitor() == null && (getConsumer() == null || getConsumer().getMonitor() == null) && (getApplication() == null || getApplication().getMonitor() == null)) {
             Map<String, MonitorConfig> monitorConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, MonitorConfig.class, false, false);
             if (monitorConfigMap != null && monitorConfigMap.size() > 0) {
                 MonitorConfig monitorConfig = null;
@@ -234,7 +210,6 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-
         if (getMetrics() == null) {
             Map<String, MetricsConfig> metricsConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, MetricsConfig.class, false, false);
             if (metricsConfigMap != null && metricsConfigMap.size() > 0) {
@@ -250,7 +225,6 @@ public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
                 }
             }
         }
-
         if (shouldInit()) {
             getObject();
         }

@@ -56,8 +56,7 @@ import static org.springframework.util.StringUtils.hasText;
  *
  * @since 2.5.7
  */
-public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBeanPostProcessor implements
-        ApplicationContextAware, ApplicationListener {
+public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBeanPostProcessor implements ApplicationContextAware, ApplicationListener {
 
     /**
      * The bean name of {@link ReferenceAnnotationBeanPostProcessor}
@@ -69,17 +68,13 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      */
     private static final int CACHE_SIZE = Integer.getInteger(BEAN_NAME + ".cache.size", 32);
 
-    private final ConcurrentMap<String, ReferenceBean<?>> referenceBeanCache =
-            new ConcurrentHashMap<>(CACHE_SIZE);
+    private final ConcurrentMap<String, ReferenceBean<?>> referenceBeanCache = new ConcurrentHashMap<>(CACHE_SIZE);
 
-    private final ConcurrentHashMap<String, ReferenceBeanInvocationHandler> localReferenceBeanInvocationHandlerCache =
-            new ConcurrentHashMap<>(CACHE_SIZE);
+    private final ConcurrentHashMap<String, ReferenceBeanInvocationHandler> localReferenceBeanInvocationHandlerCache = new ConcurrentHashMap<>(CACHE_SIZE);
 
-    private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedFieldReferenceBeanCache =
-            new ConcurrentHashMap<>(CACHE_SIZE);
+    private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedFieldReferenceBeanCache = new ConcurrentHashMap<>(CACHE_SIZE);
 
-    private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedMethodReferenceBeanCache =
-            new ConcurrentHashMap<>(CACHE_SIZE);
+    private final ConcurrentMap<InjectionMetadata.InjectedElement, ReferenceBean<?>> injectedMethodReferenceBeanCache = new ConcurrentHashMap<>(CACHE_SIZE);
 
     private ApplicationContext applicationContext;
 
@@ -121,34 +116,23 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     }
 
     // 该方法得到的对象会赋值给@ReferenceBean注解的属性
-    //
     @Override
-    protected Object doGetInjectedBean(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType,
-                                       InjectionMetadata.InjectedElement injectedElement) throws Exception {
+    protected Object doGetInjectedBean(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType, InjectionMetadata.InjectedElement injectedElement) throws Exception {
 
         /**
          * The name of bean that annotated Dubbo's {@link Service @Service} in local Spring {@link ApplicationContext}
          */
-        // 按ServiceBean的beanName生成规则来生成referencedBeanName， 规则为ServiceBean:interfaceClassName:version:group
+        // 按ServiceBean的beanName生成规则来生成referencedBeanName，规则为ServiceBean:interfaceClassName:version:group
         String referencedBeanName = buildReferencedBeanName(attributes, injectedType);
-
         /**
          * The name of bean that is declared by {@link Reference @Reference} annotation injection
          */
         // @Reference(methods=[Lorg.apache.dubbo.config.annotation.Method;@39b43d60) org.apache.dubbo.demo.DemoService
-        // 根据@Reference注解的信息生成referenceBeanName
-        String referenceBeanName = getReferenceBeanName(attributes, injectedType);
-
-        // 生成一个ReferenceBean对象
-        ReferenceBean referenceBean = buildReferenceBeanIfAbsent(referenceBeanName, attributes, injectedType);
-
-        // 把referenceBean添加到Spring容器中去
-        registerReferenceBean(referencedBeanName, referenceBean, attributes, injectedType);
-
+        String referenceBeanName = getReferenceBeanName(attributes, injectedType); // 根据@Reference注解的信息生成referenceBeanName
+        ReferenceBean referenceBean = buildReferenceBeanIfAbsent(referenceBeanName, attributes, injectedType); // 生成一个ReferenceBean对象
+        registerReferenceBean(referencedBeanName, referenceBean, attributes, injectedType); // 把referenceBean添加到Spring容器中去
         cacheInjectedReferenceBean(referenceBean, injectedElement);
-
-        // 创建一个代理对象，Service中的属性被注入的就是这个代理对象
-        // 内部会调用referenceBean.get();
+        // 创建一个代理对象，Service中的属性被注入的就是这个代理对象，内部会调用referenceBean.get();
         return getOrCreateProxy(referencedBeanName, referenceBeanName, referenceBean, injectedType);
     }
 
@@ -161,15 +145,9 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      * @param interfaceClass     the {@link Class class} of Service interface
      * @since 2.7.3
      */
-    private void registerReferenceBean(String referencedBeanName, ReferenceBean referenceBean,
-                                       AnnotationAttributes attributes,
-                                       Class<?> interfaceClass) {
-
+    private void registerReferenceBean(String referencedBeanName, ReferenceBean referenceBean, AnnotationAttributes attributes, Class<?> interfaceClass) {
         ConfigurableListableBeanFactory beanFactory = getBeanFactory();
-
-        // 就是referenceBeanName
-        String beanName = getReferenceBeanName(attributes, interfaceClass);
-
+        String beanName = getReferenceBeanName(attributes, interfaceClass);  // 就是referenceBeanName
         // 当前Spring容器中是否存在referencedBeanName
         if (existsServiceBean(referencedBeanName)) { // If @Service bean is local one
             /**
@@ -181,8 +159,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
             // The name of bean annotated @Service
             String serviceBeanName = runtimeBeanReference.getBeanName(); // DemoServiceImpl对应的beanName
             // register Alias rather than a new bean name, in order to reduce duplicated beans
-            // DemoServiceImpl多了一个别名，比如 demoServiceImpl和
-            beanFactory.registerAlias(serviceBeanName, beanName);
+            beanFactory.registerAlias(serviceBeanName, beanName); // DemoServiceImpl多了一个别名，比如 demoServiceImpl和
         } else { // Remote @Service Bean
             if (!beanFactory.containsBean(beanName)) {
                 beanFactory.registerSingleton(beanName, referenceBean);
@@ -202,7 +179,6 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     private String getReferenceBeanName(AnnotationAttributes attributes, Class<?> interfaceClass) {
         // id attribute appears since 2.7.3
         String beanName = getAttribute(attributes, "id");
-
         // beanName为null时会进入if判断
         if (!hasText(beanName)) {
             beanName = generateReferenceBeanName(attributes, interfaceClass);
@@ -220,7 +196,6 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      */
     private String generateReferenceBeanName(AnnotationAttributes attributes, Class<?> interfaceClass) {
         StringBuilder beanNameBuilder = new StringBuilder("@Reference");
-
         if (!attributes.isEmpty()) {
             beanNameBuilder.append('(');
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -232,9 +207,7 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
             // replace the latest "," to be ")"
             beanNameBuilder.setCharAt(beanNameBuilder.lastIndexOf(","), ')');
         }
-
         beanNameBuilder.append(" ").append(interfaceClass.getName());
-
         return beanNameBuilder.toString();
     }
 
@@ -254,11 +227,9 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      */
     private Object getOrCreateProxy(String referencedBeanName, String referenceBeanName, ReferenceBean referenceBean, Class<?> serviceInterfaceType) {
         if (existsServiceBean(referencedBeanName)) { // If the local @Service Bean exists, build a proxy of ReferenceBean
-            return newProxyInstance(getClassLoader(), new Class[]{serviceInterfaceType},
-                    wrapInvocationHandler(referenceBeanName, referenceBean));
-        } else {                                    // ReferenceBean should be initialized and get immediately
-            // 重点
-            return referenceBean.get();
+            return newProxyInstance(getClassLoader(), new Class[]{serviceInterfaceType}, wrapInvocationHandler(referenceBeanName, referenceBean));
+        } else {  // ReferenceBean should be initialized and get immediately
+            return referenceBean.get();  // 重点
         }
     }
 
@@ -308,11 +279,8 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     }
 
     @Override
-    protected String buildInjectedObjectCacheKey(AnnotationAttributes attributes, Object bean, String beanName,
-                                                 Class<?> injectedType, InjectionMetadata.InjectedElement injectedElement) {
-        return buildReferencedBeanName(attributes, injectedType) +
-                "#source=" + (injectedElement.getMember()) +
-                "#attributes=" + AnnotationUtils.resolvePlaceholders(attributes, getEnvironment());
+    protected String buildInjectedObjectCacheKey(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType, InjectionMetadata.InjectedElement injectedElement) {
+        return buildReferencedBeanName(attributes, injectedType) + "#source=" + (injectedElement.getMember()) + "#attributes=" + AnnotationUtils.resolvePlaceholders(attributes, getEnvironment());
     }
 
     /**
@@ -325,30 +293,19 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
         return serviceBeanNameBuilder.build();
     }
 
-    private ReferenceBean buildReferenceBeanIfAbsent(String referenceBeanName, AnnotationAttributes attributes,
-                                                     Class<?> referencedType)
-            throws Exception {
-
+    private ReferenceBean buildReferenceBeanIfAbsent(String referenceBeanName, AnnotationAttributes attributes, Class<?> referencedType) throws Exception {
         ReferenceBean<?> referenceBean = referenceBeanCache.get(referenceBeanName);
-
-        if (referenceBean == null) {
-
-            // 生成了一个ReferenceBean对象，attributes是@Reference注解的参数值
-            ReferenceBeanBuilder beanBuilder = ReferenceBeanBuilder
-                    .create(attributes, applicationContext)
-                    .interfaceClass(referencedType);
-            referenceBean = beanBuilder.build();
-
+        if (referenceBean == null) {// 生成了一个ReferenceBean对象，attributes是@Reference注解的参数值
+            ReferenceBeanBuilder beanBuilder = ReferenceBeanBuilder.create(attributes, applicationContext).interfaceClass(referencedType);
+            referenceBean = beanBuilder.build(); // 构建ReferenceBean对象并对属性赋值
             referenceBeanCache.put(referenceBeanName, referenceBean);
         } else if (!referencedType.isAssignableFrom(referenceBean.getInterfaceClass())) {
-            throw new IllegalArgumentException("reference bean name " + referenceBeanName + " has been duplicated, but interfaceClass " +
-                    referenceBean.getInterfaceClass().getName() + " cannot be assigned to " + referencedType.getName());
+            throw new IllegalArgumentException("reference bean name " + referenceBeanName + " has been duplicated, but interfaceClass " + referenceBean.getInterfaceClass().getName() + " cannot be assigned to " + referencedType.getName());
         }
         return referenceBean;
     }
 
-    private void cacheInjectedReferenceBean(ReferenceBean referenceBean,
-                                            InjectionMetadata.InjectedElement injectedElement) {
+    private void cacheInjectedReferenceBean(ReferenceBean referenceBean, InjectionMetadata.InjectedElement injectedElement) {
         if (injectedElement.getMember() instanceof Field) {
             injectedFieldReferenceBeanCache.put(injectedElement, referenceBean);
         } else if (injectedElement.getMember() instanceof Method) {

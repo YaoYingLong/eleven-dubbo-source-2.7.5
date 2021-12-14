@@ -54,13 +54,9 @@ public abstract class AnnotatedBeanDefinitionRegistryUtils {
      * @since 2.7.3
      */
     public static boolean isPresentBean(BeanDefinitionRegistry registry, Class<?> annotatedClass) {
-
         boolean present = false;
-
         String[] beanNames = registry.getBeanDefinitionNames();
-
         ClassLoader classLoader = annotatedClass.getClassLoader();
-
         for (String beanName : beanNames) {
             BeanDefinition beanDefinition = registry.getBeanDefinition(beanName);
             if (beanDefinition instanceof AnnotatedBeanDefinition) {
@@ -77,7 +73,6 @@ public abstract class AnnotatedBeanDefinitionRegistryUtils {
                 }
             }
         }
-
         return present;
     }
 
@@ -89,29 +84,22 @@ public abstract class AnnotatedBeanDefinitionRegistryUtils {
      * @revision 2.7.3 {@link #isPresentBean(BeanDefinitionRegistry, Class)}
      */
     public static void registerBeans(BeanDefinitionRegistry registry, Class<?>... annotatedClasses) {
-
         if (ObjectUtils.isEmpty(annotatedClasses)) {
             return;
         }
-
         // Remove all annotated-classes that have been registered
         Iterator<Class<?>> iterator = new ArrayList<>(asList(annotatedClasses)).iterator();
-
         while (iterator.hasNext()) {
             Class<?> annotatedClass = iterator.next();
             if (isPresentBean(registry, annotatedClass)) {
                 iterator.remove();
             }
         }
-
         AnnotatedBeanDefinitionReader reader = new AnnotatedBeanDefinitionReader(registry);
-
         if (logger.isDebugEnabled()) {
             logger.debug(registry.getClass().getSimpleName() + " will register annotated classes : " + asList(annotatedClasses) + " .");
         }
-        // 利用Spring中的AnnotatedBeanDefinitionReader来解析annotatedClasses
-        // 会解析该类上的注解，然后进行处理
+        // 利用Spring中的AnnotatedBeanDefinitionReader来解析annotatedClasses会解析该类上的注解，然后进行处理
         reader.register(annotatedClasses);
-
     }
 }

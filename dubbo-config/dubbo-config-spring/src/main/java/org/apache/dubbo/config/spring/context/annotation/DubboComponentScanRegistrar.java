@@ -55,22 +55,13 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         System.out.println("执行DubboComponentScanRegistrar");
-
-        // 拿到DubboComponentScan注解所定义的包路径，扫描该package下的类，识别这些类上
+        // 拿到DubboComponentScan注解所定义的包路径，扫描该package下的类
         Set<String> packagesToScan = getPackagesToScan(importingClassMetadata);
-
-        // 注册ServiceAnnotationBeanPostProcessor一个Bean
-        // 实现了BeanDefinitionRegistryPostProcessor接口，所以在Spring启动时会调用postProcessBeanDefinitionRegistry方法
-        // 该方法会进行扫描，扫描@Service注解了的类，然后生成BeanDefinition（会生成两个，一个普通的bean，一个ServiceBean），后续的Spring周期中会生成Bean
+        // 注册ServiceAnnotationBeanPostProcessor后置处理器，扫描@Service注解的类生成BeanDefinition，会生成两个一个普通的bean一个ServiceBean
         // 在ServiceBean中会监听ContextRefreshedEvent事件，一旦Spring启动完后，就会进行服务导出
         registerServiceAnnotationBeanPostProcessor(packagesToScan, registry);
-
-        // 注册ReferenceAnnotationBeanPostProcessor
-        // 实现了AnnotationInjectedBeanPostProcessor接口，继而实现了InstantiationAwareBeanPostProcessorAdapter接口
-        // 所以Spring在启动时，在对属性进行注入时会调用AnnotationInjectedBeanPostProcessor接口中的postProcessPropertyValues方法
-        // 在这个过程中会按照@Reference注解的信息去生成一个RefrenceBean对象
+        // 注册ReferenceAnnotationBeanPostProcessor，在对属性进行注入时会调用postProcessPropertyValues方法，按照@Reference注解的信息去生成一个RefrenceBean对象
         registerReferenceAnnotationBeanPostProcessor(registry);
-
     }
 
     /**
@@ -97,22 +88,17 @@ public class DubboComponentScanRegistrar implements ImportBeanDefinitionRegistra
      * @param registry {@link BeanDefinitionRegistry}
      */
     private void registerReferenceAnnotationBeanPostProcessor(BeanDefinitionRegistry registry) {
-
-        // Register @Reference Annotation Bean Processor
         // 注册一个ReferenceAnnotationBeanPostProcessor做为bean，ReferenceAnnotationBeanPostProcessor是一个BeanPostProcessor
-        BeanRegistrar.registerInfrastructureBean(registry,
-                ReferenceAnnotationBeanPostProcessor.BEAN_NAME, ReferenceAnnotationBeanPostProcessor.class);
+        BeanRegistrar.registerInfrastructureBean(registry, ReferenceAnnotationBeanPostProcessor.BEAN_NAME, ReferenceAnnotationBeanPostProcessor.class);
 
     }
 
     private Set<String> getPackagesToScan(AnnotationMetadata metadata) {
-        AnnotationAttributes attributes = AnnotationAttributes.fromMap(
-                metadata.getAnnotationAttributes(DubboComponentScan.class.getName()));
+        AnnotationAttributes attributes = AnnotationAttributes.fromMap(metadata.getAnnotationAttributes(DubboComponentScan.class.getName()));
         String[] basePackages = attributes.getStringArray("basePackages");
         Class<?>[] basePackageClasses = attributes.getClassArray("basePackageClasses");
         String[] value = attributes.getStringArray("value");
-        // Appends value array attributes
-        Set<String> packagesToScan = new LinkedHashSet<String>(Arrays.asList(value));
+        Set<String> packagesToScan = new LinkedHashSet<String>(Arrays.asList(value)); // Appends value array attributes
         packagesToScan.addAll(Arrays.asList(basePackages));
         for (Class<?> basePackageClass : basePackageClasses) {
             packagesToScan.add(ClassUtils.getPackageName(basePackageClass));

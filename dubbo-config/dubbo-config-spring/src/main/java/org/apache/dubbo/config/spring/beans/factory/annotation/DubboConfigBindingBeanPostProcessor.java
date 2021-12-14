@@ -54,8 +54,7 @@ import static org.springframework.beans.factory.BeanFactoryUtils.beansOfTypeIncl
  * @since 2.5.8
  */
 
-public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, ApplicationContextAware, InitializingBean
-        , BeanDefinitionRegistryPostProcessor {
+public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, ApplicationContextAware, InitializingBean, BeanDefinitionRegistryPostProcessor {
 
     private final Log log = LogFactory.getLog(getClass());
 
@@ -94,40 +93,26 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-
         // 每个XxConfig对应一个BeanPostProcessor，所以每个DubboConfigBindingBeanPostProcessor只处理对应的beanName
-
         if (this.beanName.equals(beanName) && bean instanceof AbstractConfig) {
-
             AbstractConfig dubboConfig = (AbstractConfig) bean;
-            // 从properties文件中获取值，并设置到dubboConfig对象中
-            bind(prefix, dubboConfig);
-
-            // 设置dubboConfig对象的name属性，设置为beanName
-            customize(beanName, dubboConfig);
-
+            bind(prefix, dubboConfig); // 从properties文件中获取值，并设置到dubboConfig对象中
+            customize(beanName, dubboConfig); // 设置dubboConfig对象的name属性，设置为beanName
         }
-
         return bean;
-
     }
 
     private void bind(String prefix, AbstractConfig dubboConfig) {
-
         dubboConfigBinder.bind(prefix, dubboConfig);
-
         if (log.isInfoEnabled()) {
-            log.info("The properties of bean [name : " + beanName + "] have been binding by prefix of " +
-                    "configuration properties : " + prefix);
+            log.info("The properties of bean [name : " + beanName + "] have been binding by prefix of configuration properties : " + prefix);
         }
     }
 
     private void customize(String beanName, AbstractConfig dubboConfig) {
-
         for (DubboConfigBeanCustomizer customizer : configBeanCustomizers) {
             customizer.customize(beanName, dubboConfig);
         }
-
     }
 
     public boolean isIgnoreUnknownFields() {
@@ -157,9 +142,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         if (bean instanceof AbstractConfig) {
-            // 添加别名，id属性的值为别名
-
-            String id = ((AbstractConfig) bean).getId();
+            String id = ((AbstractConfig) bean).getId(); // 添加别名，id属性的值为别名
             if (beanDefinitionRegistry != null && beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
                 DefaultListableBeanFactory factory = (DefaultListableBeanFactory) beanDefinitionRegistry;
                 if (!StringUtils.isBlank(id) && !factory.hasAlias(beanName, id)) {
@@ -177,43 +160,30 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     @Override
     public void afterPropertiesSet() throws Exception {
-
         initDubboConfigBinder();        // 创建DefaultDubboConfigBinder
-
         initConfigBeanCustomizers();
-
     }
 
     private void initDubboConfigBinder() {
-
         if (dubboConfigBinder == null) {
-            try {
-                // 先从Spring容器中获取DubboConfigBinder，默认获取不到
+            try {// 先从Spring容器中获取DubboConfigBinder，默认获取不到
                 dubboConfigBinder = applicationContext.getBean(DubboConfigBinder.class);
             } catch (BeansException ignored) {
                 if (log.isDebugEnabled()) {
                     log.debug("DubboConfigBinder Bean can't be found in ApplicationContext.");
                 }
-
-                // Use Default implementation
-                // 生成一个默认的
+                // Use Default implementation 生成一个默认的
                 dubboConfigBinder = createDubboConfigBinder(applicationContext.getEnvironment());
             }
         }
-
         dubboConfigBinder.setIgnoreUnknownFields(ignoreUnknownFields);
         dubboConfigBinder.setIgnoreInvalidFields(ignoreInvalidFields);
-
     }
 
     private void initConfigBeanCustomizers() {
-
         // 得到之前创建了的NamePropertyDefaultValueDubboConfigBeanCustomizer
-        Collection<DubboConfigBeanCustomizer> configBeanCustomizers =
-                beansOfTypeIncludingAncestors(applicationContext, DubboConfigBeanCustomizer.class).values();
-
+        Collection<DubboConfigBeanCustomizer> configBeanCustomizers = beansOfTypeIncludingAncestors(applicationContext, DubboConfigBeanCustomizer.class).values();
         this.configBeanCustomizers = new ArrayList<>(configBeanCustomizers);
-
         AnnotationAwareOrderComparator.sort(this.configBeanCustomizers);
     }
 

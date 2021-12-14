@@ -39,18 +39,10 @@ public class DubboConfigConfigurationRegistrar implements ImportBeanDefinitionRe
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         System.out.println("执行DubboConfigConfigurationRegistrar");
-
-
-        AnnotationAttributes attributes = AnnotationAttributes.fromMap(
-                importingClassMetadata.getAnnotationAttributes(EnableDubboConfig.class.getName()));
-
+        AnnotationAttributes attributes = AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(EnableDubboConfig.class.getName()));
         boolean multiple = attributes.getBoolean("multiple"); //true
-
-        // Single Config Bindings
-        registerBeans(registry, DubboConfigConfiguration.Single.class);
-
-        // 默认为true
-        if (multiple) { // Since 2.6.6 https://github.com/apache/dubbo/issues/3193
+        registerBeans(registry, DubboConfigConfiguration.Single.class); // Single Config Bindings
+        if (multiple) { // 默认为true // Since 2.6.6 https://github.com/apache/dubbo/issues/3193
             registerBeans(registry, DubboConfigConfiguration.Multiple.class);
         }
     }

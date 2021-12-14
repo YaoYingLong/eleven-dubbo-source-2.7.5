@@ -125,44 +125,28 @@ public class AnnotationUtils {
      * @return the {@link Class class} of Dubbo Service interface
      * @throws IllegalArgumentException if can't resolved
      */
-    public static Class<?> resolveServiceInterfaceClass(AnnotationAttributes attributes, Class<?> defaultInterfaceClass)
-            throws IllegalArgumentException {
-
+    public static Class<?> resolveServiceInterfaceClass(AnnotationAttributes attributes, Class<?> defaultInterfaceClass) throws IllegalArgumentException {
         ClassLoader classLoader = defaultInterfaceClass != null ? defaultInterfaceClass.getClassLoader() : Thread.currentThread().getContextClassLoader();
-
         Class<?> interfaceClass = getAttribute(attributes, "interfaceClass");
-
         if (void.class.equals(interfaceClass)) { // default or set void.class for purpose.
-
             interfaceClass = null;
-
             String interfaceClassName = getAttribute(attributes, "interfaceName");
-
             if (hasText(interfaceClassName)) {
                 if (ClassUtils.isPresent(interfaceClassName, classLoader)) {
                     interfaceClass = resolveClassName(interfaceClassName, classLoader);
                 }
             }
-
         }
-
         if (interfaceClass == null && defaultInterfaceClass != null) {
             // Find all interfaces from the annotated class
             // To resolve an issue : https://github.com/apache/dubbo/issues/3251
             Class<?>[] allInterfaces = getAllInterfacesForClass(defaultInterfaceClass);
-
             if (allInterfaces.length > 0) {
                 interfaceClass = allInterfaces[0];
             }
-
         }
-
-        Assert.notNull(interfaceClass,
-                "@Service interfaceClass() or interfaceName() or interface class must be present!");
-
-        Assert.isTrue(interfaceClass.isInterface(),
-                "The annotated type must be an interface!");
-
+        Assert.notNull(interfaceClass, "@Service interfaceClass() or interfaceName() or interface class must be present!");
+        Assert.isTrue(interfaceClass.isInterface(), "The annotated type must be an interface!");
         return interfaceClass;
     }
 

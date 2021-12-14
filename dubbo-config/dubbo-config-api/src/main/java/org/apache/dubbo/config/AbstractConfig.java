@@ -157,7 +157,6 @@ public abstract class AbstractConfig implements Serializable {
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
         // 把XxConfig中的属性添加到parameters中
-
         if (config == null) {
             return;
         }

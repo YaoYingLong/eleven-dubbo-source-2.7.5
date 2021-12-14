@@ -47,19 +47,13 @@ public abstract class PropertySourcesUtils {
      * @see Properties
      */
     public static Map<String, Object> getSubProperties(Iterable<PropertySource<?>> propertySources, String prefix) {
-
         // Non-Extension AbstractEnvironment
-        AbstractEnvironment environment = new AbstractEnvironment() {
-        };
-
+        AbstractEnvironment environment = new AbstractEnvironment() {};
         MutablePropertySources mutablePropertySources = environment.getPropertySources();
-
         for (PropertySource<?> source : propertySources) {
             mutablePropertySources.addLast(source);
         }
-
         return getSubProperties(environment, prefix);
-
     }
 
     /**
@@ -71,13 +65,9 @@ public abstract class PropertySourcesUtils {
      * @see Properties
      */
     public static Map<String, Object> getSubProperties(ConfigurableEnvironment environment, String prefix) {
-
         Map<String, Object> subProperties = new LinkedHashMap<>();
-
         MutablePropertySources propertySources = environment.getPropertySources();
-
         String normalizedPrefix = normalizePrefix(prefix);
-
         for (PropertySource<?> source : propertySources) {
             if (source instanceof EnumerablePropertySource) {
                 for (String name : ((EnumerablePropertySource<?>) source).getPropertyNames()) {
@@ -95,7 +85,6 @@ public abstract class PropertySourcesUtils {
                 }
             }
         }
-
         return Collections.unmodifiableMap(subProperties);
 
     }

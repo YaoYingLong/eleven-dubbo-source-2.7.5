@@ -18,30 +18,16 @@ package org.apache.dubbo.config.spring;
 
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.config.ApplicationConfig;
-import org.apache.dubbo.config.ConfigCenterConfig;
-import org.apache.dubbo.config.MetadataReportConfig;
-import org.apache.dubbo.config.MetricsConfig;
-import org.apache.dubbo.config.ModuleConfig;
-import org.apache.dubbo.config.MonitorConfig;
-import org.apache.dubbo.config.ProtocolConfig;
-import org.apache.dubbo.config.ProviderConfig;
-import org.apache.dubbo.config.RegistryConfig;
-import org.apache.dubbo.config.ServiceConfig;
+import org.apache.dubbo.config.*;
 import org.apache.dubbo.config.annotation.Service;
 import org.apache.dubbo.config.spring.context.event.ServiceBeanExportedEvent;
 import org.apache.dubbo.config.spring.extension.SpringExtensionFactory;
-
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ApplicationEventPublisherAware;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.*;
 import org.springframework.context.event.ContextRefreshedEvent;
 
 import java.util.ArrayList;
@@ -57,9 +43,7 @@ import static org.apache.dubbo.config.spring.util.BeanFactoryUtils.addApplicatio
  *
  * @export
  */
-public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean,
-        ApplicationContextAware, ApplicationListener<ContextRefreshedEvent>, BeanNameAware,
-        ApplicationEventPublisherAware {
+public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean, DisposableBean, ApplicationContextAware, ApplicationListener<ContextRefreshedEvent>, BeanNameAware, ApplicationEventPublisherAware {
 
 
     private static final long serialVersionUID = 213195494150089726L;
@@ -87,10 +71,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
-
-        // 如果某一个Service是通过Spring暴露的，
-        // 那么当需要获取该服务时就要从Spring容器中进行获取，
-        // 也就是从applicationContext中获取，所以需要把applicationContext添加到SpringExtensionFactory中去
+        // 若某一个Service是通过Spring暴露的，则当需要获取该服务时就要从Spring容器中进行获取，所以需要把applicationContext添加到SpringExtensionFactory中去
         SpringExtensionFactory.addApplicationContext(applicationContext);
         // 一定要有这一步，不然ServiceBean将接收不到ContextRefreshedEvent事件
         supportedApplicationListener = addApplicationListener(applicationContext, this);
@@ -112,32 +93,25 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        // 当前服务没有被导出并且没有卸载，才导出服务
-        if (!isExported() && !isUnexported()) {
+        if (!isExported() && !isUnexported()) { // 当前服务没有被导出并且没有卸载，才导出服务
             if (logger.isInfoEnabled()) {
                 logger.info("The service ready on spring started. service: " + getInterface());
             }
-            // 服务导出（服务注册）
-            export();
+            export();  // 服务导出（服务注册）
         }
     }
 
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
     public void afterPropertiesSet() throws Exception {
-
-        // 如果@Service中没有配置provider
-        if (getProvider() == null) {
+        if (getProvider() == null) { // 如果@Service中没有配置provider
             // 就从Spring容器中找ProviderConfig类型的Bean
             Map<String, ProviderConfig> providerConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);
             if (providerConfigMap != null && providerConfigMap.size() > 0) {
                 // 从Spring容器中找ProtocolConfig类型的Bean
                 Map<String, ProtocolConfig> protocolConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class, false, false);
-
                 // 如果存在ProtocolConfig存在，并且存在多个ProviderConfig
-                if (CollectionUtils.isEmptyMap(protocolConfigMap)
-                        && providerConfigMap.size() > 1) { // backward compatibility
-
+                if (CollectionUtils.isEmptyMap(protocolConfigMap) && providerConfigMap.size() > 1) { // backward compatibility
                     // 如果找到多个，取第一个default等于true的ProviderConfig
                     List<ProviderConfig> providerConfigs = new ArrayList<ProviderConfig>();
                     for (ProviderConfig config : providerConfigMap.values()) {
@@ -164,8 +138,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
-        if (getApplication() == null
-                && (getProvider() == null || getProvider().getApplication() == null)) {
+        if (getApplication() == null && (getProvider() == null || getProvider().getApplication() == null)) {
             Map<String, ApplicationConfig> applicationConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ApplicationConfig.class, false, false);
             if (applicationConfigMap != null && applicationConfigMap.size() > 0) {
                 ApplicationConfig applicationConfig = null;
@@ -180,8 +153,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
-        if (getModule() == null
-                && (getProvider() == null || getProvider().getModule() == null)) {
+        if (getModule() == null && (getProvider() == null || getProvider().getModule() == null)) {
             Map<String, ModuleConfig> moduleConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ModuleConfig.class, false, false);
             if (moduleConfigMap != null && moduleConfigMap.size() > 0) {
                 ModuleConfig moduleConfig = null;
@@ -198,7 +170,6 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
-
         // registryIds代码能看到，但是没找到在哪里能配置
         if (StringUtils.isEmpty(getRegistryIds())) {
             if (getApplication() != null && StringUtils.isNotEmpty(getApplication().getRegistryIds())) {
@@ -208,10 +179,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 setRegistryIds(getProvider().getRegistryIds());
             }
         }
-
-        if ((CollectionUtils.isEmpty(getRegistries()))
-                && (getProvider() == null || CollectionUtils.isEmpty(getProvider().getRegistries()))
-                && (getApplication() == null || CollectionUtils.isEmpty(getApplication().getRegistries()))) {
+        if ((CollectionUtils.isEmpty(getRegistries())) && (getProvider() == null || CollectionUtils.isEmpty(getProvider().getRegistries())) && (getApplication() == null || CollectionUtils.isEmpty(getApplication().getRegistries()))) {
             Map<String, RegistryConfig> registryConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, RegistryConfig.class, false, false);
             if (CollectionUtils.isNotEmptyMap(registryConfigMap)) {
                 List<RegistryConfig> registryConfigs = new ArrayList<>();
@@ -222,7 +190,6 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                         }
                     });
                 }
-
                 if (registryConfigs.isEmpty()) {
                     for (RegistryConfig config : registryConfigMap.values()) {
                         if (StringUtils.isEmpty(registryIds) && (config.isDefault() == null || config.isDefault().booleanValue())) {
@@ -243,7 +210,6 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 throw new IllegalStateException("Multiple MetadataReport configs: " + metadataReportConfigMap);
             }
         }
-
         if (getConfigCenter() == null) {
             Map<String, ConfigCenterConfig> configenterMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ConfigCenterConfig.class, false, false);
             if (configenterMap != null && configenterMap.size() == 1) {
@@ -252,10 +218,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 throw new IllegalStateException("Multiple ConfigCenter found:" + configenterMap);
             }
         }
-
-        if (getMonitor() == null
-                && (getProvider() == null || getProvider().getMonitor() == null)
-                && (getApplication() == null || getApplication().getMonitor() == null)) {
+        if (getMonitor() == null && (getProvider() == null || getProvider().getMonitor() == null) && (getApplication() == null || getApplication().getMonitor() == null)) {
             Map<String, MonitorConfig> monitorConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, MonitorConfig.class, false, false);
             if (monitorConfigMap != null && monitorConfigMap.size() > 0) {
                 MonitorConfig monitorConfig = null;
@@ -272,7 +235,6 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
-
         if (getMetrics() == null) {
             Map<String, MetricsConfig> metricsConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, MetricsConfig.class, false, false);
             if (metricsConfigMap != null && metricsConfigMap.size() > 0) {
@@ -288,16 +250,12 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
             }
         }
-
-        // protocolIds也没看到在哪里配置
-        if (StringUtils.isEmpty(getProtocolIds())) {
+        if (StringUtils.isEmpty(getProtocolIds())) { // protocolIds也没看到在哪里配置
             if (getProvider() != null && StringUtils.isNotEmpty(getProvider().getProtocolIds())) {
                 setProtocolIds(getProvider().getProtocolIds());
             }
         }
-
-        if (CollectionUtils.isEmpty(getProtocols())
-                && (getProvider() == null || CollectionUtils.isEmpty(getProvider().getProtocols()))) {
+        if (CollectionUtils.isEmpty(getProtocols()) && (getProvider() == null || CollectionUtils.isEmpty(getProvider().getProtocols()))) {
             Map<String, ProtocolConfig> protocolConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class, false, false);
             if (protocolConfigMap != null && protocolConfigMap.size() > 0) {
                 List<ProtocolConfig> protocolConfigs = new ArrayList<ProtocolConfig>();
@@ -309,7 +267,6 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                                 }
                             });
                 }
-
                 if (protocolConfigs.isEmpty()) {
                     for (ProtocolConfig config : protocolConfigMap.values()) {
                         if (StringUtils.isEmpty(protocolIds)) {
@@ -317,20 +274,17 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                         }
                     }
                 }
-
                 if (!protocolConfigs.isEmpty()) {
                     super.setProtocols(protocolConfigs);
                 }
             }
         }
         if (StringUtils.isEmpty(getPath())) {
-            if (StringUtils.isNotEmpty(beanName)
-                    && StringUtils.isNotEmpty(getInterface())
-                    && beanName.startsWith(getInterface())) {
+            if (StringUtils.isNotEmpty(beanName) && StringUtils.isNotEmpty(getInterface()) && beanName.startsWith(getInterface())) {
                 setPath(beanName);
             }
         }
-        if (!supportedApplicationListener) {
+        if (!supportedApplicationListener) { // 在setApplicationContext方法中添加监听器成功，则该参数会被置为true
             export();
         }
     }
@@ -351,9 +305,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
     @Override
     public void export() {
         super.export();
-        // Publish ServiceBeanExportedEvent
-        // Spring启动完发布ContextRefreshedEvent事件--->服务导出--->发布ServiceBeanExportedEvent
-        // 程序员可以通过Spring中的ApplicationListener来监听服务导出是否完成
+        // Publish ServiceBeanExportedEvent，Spring启动完发布ContextRefreshedEvent事件--->服务导出--->发布ServiceBeanExportedEvent，可通过Spring中的ApplicationListener来监听服务导出是否完成
         publishExportEvent();
     }
 

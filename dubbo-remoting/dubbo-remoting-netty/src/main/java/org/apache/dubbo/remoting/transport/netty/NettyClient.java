@@ -88,7 +88,6 @@ public class NettyClient extends AbstractClient {
         ChannelFuture future = bootstrap.connect(getConnectAddress());
         try {
             boolean ret = future.awaitUninterruptibly(getConnectTimeout(), TimeUnit.MILLISECONDS);
-
             if (ret && future.isSuccess()) {
                 Channel newChannel = future.getChannel();
                 newChannel.setInterestOps(Channel.OP_READ_WRITE);

@@ -138,8 +138,7 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
 
     @Override
     public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeanCreationException {
-        // 寻找需要注入的属性即被@Reference标注的Field
-        InjectionMetadata metadata = findInjectionMetadata(beanName, bean.getClass(), pvs);
+        InjectionMetadata metadata = findInjectionMetadata(beanName, bean.getClass(), pvs); // 寻找需要注入的属性即被@Reference标注的Field
         try {
             metadata.inject(bean, beanName, pvs);
         } catch (BeanCreationException ex) {
@@ -174,7 +173,6 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
             }
         });
         return elements;
-
     }
 
     /**
@@ -222,7 +220,6 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
         Collection<AnnotationInjectedBeanPostProcessor.AnnotatedMethodElement> methodElements = findAnnotatedMethodMetadata(beanClass);
         // 返回的是Dubbo定义的AnnotatedInjectionMetadata，接下来就会使用这个类去进行属性注入
         return new AnnotationInjectedBeanPostProcessor.AnnotatedInjectionMetadata(beanClass, fieldElements, methodElements);
-
     }
 
     private InjectionMetadata findInjectionMetadata(String beanName, Class<?> clazz, PropertyValues pvs) {
@@ -241,8 +238,7 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
                         metadata = buildAnnotatedMetadata(clazz);
                         this.injectionMetadataCache.put(cacheKey, metadata);
                     } catch (NoClassDefFoundError err) {
-                        throw new IllegalStateException("Failed to introspect object class [" + clazz.getName() +
-                                "] for annotation metadata: could not find class that it depends on", err);
+                        throw new IllegalStateException("Failed to introspect object class [" + clazz.getName() + "] for annotation metadata: could not find class that it depends on", err);
                     }
                 }
             }
@@ -343,7 +339,6 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
             injectedObjectsCache.putIfAbsent(cacheKey, injectedObject);
         }
         return injectedObject;
-
     }
 
     /**
@@ -465,58 +460,42 @@ public abstract class AnnotationInjectedBeanPostProcessor extends InstantiationA
      * {@link Annotation Annotated} {@link Method} {@link InjectionMetadata.InjectedElement}
      */
     private class AnnotatedMethodElement extends InjectionMetadata.InjectedElement {
-
         private final Method method;
-
         private final AnnotationAttributes attributes;
-
         private volatile Object object;
-
         protected AnnotatedMethodElement(Method method, PropertyDescriptor pd, AnnotationAttributes attributes) {
             super(method, pd);
             this.method = method;
             this.attributes = attributes;
         }
-
         @Override
-        protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
-            // set方法对应的属性的类型
+        protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable { // set方法对应的属性的类型
             Class<?> injectedType = pd.getPropertyType();
             // 从Spring容器中获取一个Bean（注意，这个方法内部会生成Bean而且会缓存，就像Spring中的getBean一样）
             Object injectedObject = getInjectedObject(attributes, bean, beanName, injectedType, this);
             ReflectionUtils.makeAccessible(method);
             method.invoke(bean, injectedObject);  // 调用set方法
-
         }
-
     }
 
     /**
      * {@link Annotation Annotated} {@link Field} {@link InjectionMetadata.InjectedElement}
      */
     public class AnnotatedFieldElement extends InjectionMetadata.InjectedElement {
-
         private final Field field;
-
         private final AnnotationAttributes attributes;
-
         private volatile Object bean;
-
         protected AnnotatedFieldElement(Field field, AnnotationAttributes attributes) {
             super(field, null);
             this.field = field;
             this.attributes = attributes;
         }
-
         @Override
-        protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {
-            // 给bean对象进行属性赋值
+        protected void inject(Object bean, String beanName, PropertyValues pvs) throws Throwable {// 给bean对象进行属性赋值
             Class<?> injectedType = field.getType();
-            // 获取对象，然后进行注入
-            Object injectedObject = getInjectedObject(attributes, bean, beanName, injectedType, this);
+            Object injectedObject = getInjectedObject(attributes, bean, beanName, injectedType, this); // 获取对象，然后进行注入
             ReflectionUtils.makeAccessible(field);
             field.set(bean, injectedObject); // 字段赋值，injectedObject就是值
         }
-
     }
 }

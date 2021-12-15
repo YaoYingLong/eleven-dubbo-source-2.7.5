@@ -274,20 +274,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (configCenter == null) {
             ConfigManager.getInstance().getConfigCenter().ifPresent(cc -> this.configCenter = cc);
         }
-
-        // 如果配置了ConfigCenter
-        if (this.configCenter != null) {
-
-            // 从其他位置获取配置中心的相关属性信息，比如配置中心地址
+        if (this.configCenter != null) { // 如果配置了ConfigCenter
             // TODO there may have duplicate refresh
-            this.configCenter.refresh();
-
-            // 属性更新后，从远程配置中心获取数据(应用配置，全局配置)
-            prepareEnvironment();
+            this.configCenter.refresh(); // 从其他位置获取配置中心的相关属性信息，比如配置中心地址
+            prepareEnvironment(); // 属性更新后，从远程配置中心获取数据(应用配置，全局配置)
         }
-
-        // 从配置中心取到配置数据后，刷新所有的XxConfig中的属性，除开ServiceConfig
-        ConfigManager.getInstance().refreshAll();
+        ConfigManager.getInstance().refreshAll();  // 从配置中心取到配置数据后，刷新所有的XxConfig中的属性，除开ServiceConfig
     }
 
     private void prepareEnvironment() {
@@ -295,22 +287,16 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
             if (!configCenter.checkOrUpdateInited()) {
                 return;
             }
-
             // 动态配置中心，管理台上的配置中心
             DynamicConfiguration dynamicConfiguration = getDynamicConfiguration(configCenter.toUrl());
-
             // 如果是zookeeper，获取的就是/dubbo/config/dubbo/dubbo.properties节点中的内容
             String configContent = dynamicConfiguration.getProperties(configCenter.getConfigFile(), configCenter.getGroup());
-
             String appGroup = application != null ? application.getName() : null;
             String appConfigContent = null;
             if (StringUtils.isNotEmpty(appGroup)) {
                 // 获取的就是/dubbo/config/dubbo-demo-consumer-application/dubbo.properties节点中的内容
                 // 这里有bug
-                appConfigContent = dynamicConfiguration.getProperties
-                        (StringUtils.isNotEmpty(configCenter.getAppConfigFile()) ? configCenter.getAppConfigFile() : configCenter.getConfigFile(),
-                         appGroup
-                        );
+                appConfigContent = dynamicConfiguration.getProperties(StringUtils.isNotEmpty(configCenter.getAppConfigFile()) ? configCenter.getAppConfigFile() : configCenter.getConfigFile(), appGroup);
             }
             try {
                 Environment.getInstance().setConfigCenterFirst(configCenter.isHighestPriority());
@@ -338,52 +324,30 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * @param provider whether it is the provider side
      * @return
      */
-    protected List<URL> loadRegistries(boolean provider) {
-        // check && override if necessary
+    protected List<URL> loadRegistries(boolean provider) {// check && override if necessary
         List<URL> registryList = new ArrayList<URL>();
         if (CollectionUtils.isNotEmpty(registries)) {
             for (RegistryConfig config : registries) {
                 String address = config.getAddress();
-                // 如果注册中心没有配地址，则地址为0.0.0.0
-                if (StringUtils.isEmpty(address)) {
+                if (StringUtils.isEmpty(address)) { // 如果注册中心没有配地址，则地址为0.0.0.0
                     address = ANYHOST_VALUE;
                 }
-                // 如果注册中心的地址不是"N/A"
-                if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
+                if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) { // 如果注册中心的地址不是"N/A"
                     Map<String, String> map = new HashMap<String, String>();
-                    // 把application中的参数放入map中，注意，map中的key是没有prefix的
-                    appendParameters(map, application);
-                    // 把config中的参数放入map中，注意，map中的key是没有prefix的
-                    // config是RegistryConfig，表示注册中心
-                    appendParameters(map, config);
-                    // 此处path值固定为RegistryService.class.getName()，因为现在是在加载注册中心
-                    map.put(PATH_KEY, RegistryService.class.getName());
-                    // 把dubbo的版本信息和pid放入map中
-                    appendRuntimeParameters(map);
-
-                    // 如果map中如果没有protocol，那么默认为dubbo
-                    if (!map.containsKey(PROTOCOL_KEY)) {
+                    appendParameters(map, application); // 把application中的参数放入map中，注意，map中的key是没有prefix的
+                    appendParameters(map, config);  // 把config中的参数放入map中，注意，map中的key是没有prefix的config是RegistryConfig，表示注册中心
+                    map.put(PATH_KEY, RegistryService.class.getName());// 此处path值固定为RegistryService.class.getName()，因为现在是在加载注册中心
+                    appendRuntimeParameters(map); // 把dubbo的版本信息和pid放入map中
+                    if (!map.containsKey(PROTOCOL_KEY)) { // 如果map中如果没有protocol，那么默认为dubbo
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                     }
-
-                    // 构造注册中心url，地址+参数
-                    List<URL> urls = UrlUtils.parseURLs(address, map);
-
+                    List<URL> urls = UrlUtils.parseURLs(address, map); // 构造注册中心url，地址+参数
                     for (URL url : urls) {
-                        url = URLBuilder.from(url)
-                                .addParameter(REGISTRY_KEY, url.getProtocol())
-                                .setProtocol(REGISTRY_PROTOCOL)
-                                .build();
-                        // 到此为止，url的内容大概为：
-                        // registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=dubbo-demo-annotation-provider&dubbo=2.0.2&pid=269936&registry=zookeeper&timestamp=1584886077813
-                        // 该url表示：使用registry协议调用org.apache.dubbo.registry.RegistryService服务
-                        // 参数为application=dubbo-demo-annotation-provider&dubbo=2.0.2&pid=269936&registry=zookeeper&timestamp=1584886077813
-
-                        // 这里是服务提供者和服务消费者区别的逻辑
-                        // 如果是服务提供者，获取register的值，如果为false，表示该服务不注册到注册中心
-                        // 如果是服务消费者，获取subscribe的值，如果为false，表示该引入的服务不订阅注册中心中的数据
-                        if ((provider && url.getParameter(REGISTER_KEY, true))
-                                || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
+                        url = URLBuilder.from(url).addParameter(REGISTRY_KEY, url.getProtocol()).setProtocol(REGISTRY_PROTOCOL).build();
+                        // 到此为止，url的内容大概为：registry://127.0.0.1:2181/org.apache.dubbo.registry.RegistryService?application=dubbo-demo-annotation-provider&dubbo=2.0.2&pid=269936&registry=zookeeper&timestamp=1584886077813
+                        // 该url表示：使用registry协议调用org.apache.dubbo.registry.RegistryService服务，参数为application=dubbo-demo-annotation-provider&dubbo=2.0.2&pid=269936&registry=zookeeper&timestamp=1584886077813
+                        // 若是服务提供者，获取register的值，如果为false，表示该服务不注册到注册中心，若是服务消费者，获取subscribe的值，如果为false，表示该引入的服务不订阅注册中心中的数据
+                        if ((provider && url.getParameter(REGISTER_KEY, true)) || (!provider && url.getParameter(SUBSCRIBE_KEY, true))) {
                             registryList.add(url);
                         }
                     }

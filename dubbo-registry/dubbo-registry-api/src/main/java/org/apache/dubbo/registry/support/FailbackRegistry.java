@@ -234,12 +234,10 @@ public abstract class FailbackRegistry extends AbstractRegistry {
         super.register(url);
         removeFailedRegistered(url);
         removeFailedUnregistered(url);
-        try {
-            // Sending a registration request to the server side
+        try {// Sending a registration request to the server side
             doRegister(url);
         } catch (Exception e) {
             Throwable t = e;
-
             // If the startup detection is opened, the Exception is thrown directly.
             boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                     && url.getParameter(Constants.CHECK_KEY, true)
@@ -253,7 +251,6 @@ public abstract class FailbackRegistry extends AbstractRegistry {
             } else {
                 logger.error("Failed to register " + url + ", waiting for retry, cause: " + t.getMessage(), t);
             }
-
             // Record a failed registration request to a failed list, retry regularly
             addFailedRegistered(url);
         }

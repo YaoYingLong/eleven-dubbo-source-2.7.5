@@ -20,11 +20,7 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.Version;
 import org.apache.dubbo.common.bytecode.Wrapper;
 import org.apache.dubbo.common.extension.ExtensionLoader;
-import org.apache.dubbo.common.utils.ClassUtils;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.common.utils.ConfigUtils;
-import org.apache.dubbo.common.utils.NetUtils;
-import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.common.utils.*;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.context.ConfigManager;
 import org.apache.dubbo.config.support.Parameter;
@@ -47,26 +43,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
-import static org.apache.dubbo.common.constants.CommonConstants.ANY_VALUE;
-import static org.apache.dubbo.common.constants.CommonConstants.CLUSTER_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.COMMA_SEPARATOR;
-import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER_SIDE;
-import static org.apache.dubbo.common.constants.CommonConstants.DUBBO;
-import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.LOCALHOST_VALUE;
-import static org.apache.dubbo.common.constants.CommonConstants.METHODS_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.MONITOR_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.REVISION_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.SEMICOLON_SPLIT_PATTERN;
-import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
+import static org.apache.dubbo.common.constants.CommonConstants.*;
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_PROTOCOL;
 import static org.apache.dubbo.common.utils.NetUtils.isInvalidLocalHost;
 import static org.apache.dubbo.config.Constants.DUBBO_IP_TO_REGISTRY;
@@ -216,37 +195,25 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         if (StringUtils.isEmpty(interfaceName)) {
             throw new IllegalStateException("<dubbo:reference interface=\"\" /> interface not allow null!");
         }
-        // 填充ReferenceConfig对象中的属性
-        completeCompoundConfigs();
-        // 开启配置中心
-        startConfigCenter();
-        // get consumer's global configuration
-        checkDefault();
-        // 刷新ReferenceConfig对象的属性值
-        this.refresh();
-
-        // 设置泛化
-        if (getGeneric() == null && getConsumer() != null) {
+        completeCompoundConfigs(); // 填充ReferenceConfig对象中的属性
+        startConfigCenter();  // 开启配置中心
+        checkDefault();  // get consumer's global configuration
+        this.refresh(); // 刷新ReferenceConfig对象的属性值
+        if (getGeneric() == null && getConsumer() != null) { // 设置泛化
             setGeneric(getConsumer().getGeneric());
         }
-
         if (ProtocolUtils.isGeneric(getGeneric())) {
             interfaceClass = GenericService.class;
         } else {
             try {
-                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread()
-                        .getContextClassLoader());
+                interfaceClass = Class.forName(interfaceName, true, Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
             checkInterfaceAndMethods(interfaceClass, methods);
         }
-
-
         resolveFile();
-
         checkApplication();
-
         checkMetadataReport();
     }
 
@@ -352,18 +319,16 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
-        if (shouldJvmRefer(map)) {
+        if (shouldJvmRefer(map)) { // 若是本地调用
             // injvm://
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
-        } else {
-            // 为什么会有urls，因为可以在@Reference的url属性中配置多个url，可以是点对点的服务地址，也可以是注册中心的地址
+        } else {// 为什么会有urls，因为可以在@Reference的url属性中配置多个url，可以是点对点的服务地址，也可以是注册中心的地址
             urls.clear(); // reference retry init will add url to urls, lead to OOM
-            // @Reference中指定了url属性
-            if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+            if (url != null && url.length() > 0) {  // @Reference中指定了url属性
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url); // 用;号切分
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -371,34 +336,24 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         if (StringUtils.isEmpty(url.getPath())) {
                             url = url.setPath(interfaceName);
                         }
-
-                        // 如果是注册中心地址，则在url中添加一个refer参数
-                        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
-                            // map表示消费者端配置的参数
-                            urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
-                        } else {
-                            // 如果是服务地址
-                            // 有可能url中配置了参数，map中表示的服务消费者消费服务时的参数，所以需要合并
+                        if (REGISTRY_PROTOCOL.equals(url.getProtocol())) { // 如果是注册中心地址，则在url中添加一个refer参数
+                            urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map))); // map表示消费者端配置的参数
+                        } else {// 如果是服务地址，有可能url中配置了参数，map中表示的服务消费者消费服务时的参数，所以需要合并
                             urls.add(ClusterUtils.mergeUrl(url, map));
                         }
                     }
                 }
-            } else { // assemble URL from register center's configuration
-                // @Reference中的protocol属性表示使用哪个协议调用服务，如果不是本地调用协议injvm://，则把注册中心地址找出来
-                // 对于injvm://协议已经在之前的逻辑中就已经生成invoke了
-                // if protocols not injvm checkRegistry
-                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())){
+            } else { // @Reference中的protocol属性表示使用哪个协议调用服务，如果不是本地调用协议injvm://，则把注册中心地址找出来，对于injvm://协议已经在之前的逻辑中就已经生成invoke了
+                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
                     checkRegistry();
-                    // 加载注册中心地址
-                    List<URL> us = loadRegistries(false);
+                    List<URL> us = loadRegistries(false); // 加载注册中心地址
                     if (CollectionUtils.isNotEmpty(us)) {
                         for (URL u : us) {
                             URL monitorUrl = loadMonitor(u);
                             if (monitorUrl != null) {
                                 map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                             }
-                            // 对于注册中心地址都添加REFER_KEY
-                            urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
+                            urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map))); // 对于注册中心地址都添加REFER_KEY
                         }
                     }
                     if (urls.isEmpty()) {
@@ -406,30 +361,24 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     }
                 }
             }
-
-            // 如果只有一个url则直接refer得到一个invoker
-            if (urls.size() == 1) {
+            if (urls.size() == 1) {  // 如果只有一个url则直接refer得到一个invoker
                 // RegistryProtocol.refer() 或者 DubboProtocol.refer()
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
                 // MockClusterInvoker-->FailoverClusterInvoker-->RegistryDirectory
-                //                                                          --->RegistryDirectory$InvokerDelegate-->ListenerInvokerWrapper-->ProtocolFilterWrapper$CallbackRegistrationInvoker-->ConsumerContextFilter-->FutureFilter-->MonitorFilter-->AsyncToSyncInvoker-->DubboInvoker
-                //                                                          --->RegistryDirectory$InvokerDelegate-->ListenerInvokerWrapper-->ProtocolFilterWrapper$CallbackRegistrationInvoker-->ConsumerContextFilter-->FutureFilter-->MonitorFilter-->AsyncToSyncInvoker-->DubboInvoker
+                // --->RegistryDirectory$InvokerDelegate-->ListenerInvokerWrapper-->ProtocolFilterWrapper$CallbackRegistrationInvoker-->ConsumerContextFilter-->FutureFilter-->MonitorFilter-->AsyncToSyncInvoker-->DubboInvoker
+                // --->RegistryDirectory$InvokerDelegate-->ListenerInvokerWrapper-->ProtocolFilterWrapper$CallbackRegistrationInvoker-->ConsumerContextFilter-->FutureFilter-->MonitorFilter-->AsyncToSyncInvoker-->DubboInvoker
             } else {
-                // 如果有多个url
-                // 1. 根据每个url，refer得到对应的invoker
-                // 2. 如果这多个urls中存在注册中心url，则把所有invoker整合为RegistryAwareClusterInvoker，该Invoker在调用时，会查看所有Invoker中是否有默认的，如果有则使用默认的Invoker，如果没有，则使用第一个Invoker
-                // 2. 如果这多个urls中不存在注册中心url，则把所有invoker整合为FailoverCluster
-
+                // 如果有多个url根据每个url，refer得到对应的invoker
+                // 若这多个urls中存在注册中心url，则把所有invoker整合为RegistryAwareClusterInvoker，该Invoker在调用时，会查看所有Invoker中是否有默认的，如果有则使用默认的Invoker，如果没有，则使用第一个Invoker
+                // 若这多个urls中不存在注册中心url，则把所有invoker整合为FailoverCluster
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
                 URL registryURL = null; // 用来记录urls中最后一个注册中心url
                 for (URL url : urls) {
                     invokers.add(REF_PROTOCOL.refer(interfaceClass, url));
-
                     if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
                         registryURL = url; // use last registry url
                     }
                 }
-
                 // 如果存在注册中心地址
                 if (registryURL != null) { // registry url is available
                     // use RegistryAwareCluster only when register's CLUSTER is available
@@ -443,7 +392,6 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
-
         if (shouldCheck() && !invoker.isAvailable()) {
             throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
         }
@@ -524,8 +472,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }));
     }
 
-    private void completeCompoundConfigs() {
-        // 和Provider类似，拿consumer、module、application中配置的属性去填充ReferenceConfig的相同的属性
+    private void completeCompoundConfigs() {// 和Provider类似，拿consumer、module、application中配置的属性去填充ReferenceConfig的相同的属性
         if (consumer != null) {
             if (application == null) {
                 setApplication(consumer.getApplication());
@@ -661,8 +608,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private void resolveFile() {
-        // 从系统变量或文件中拿接口名对应的配置项
-        String resolve = System.getProperty(interfaceName);
+        String resolve = System.getProperty(interfaceName);// 从系统变量或文件中拿接口名对应的配置项
         String resolveFile = null;
         if (StringUtils.isEmpty(resolve)) {
             resolveFile = System.getProperty("dubbo.resolve.file");

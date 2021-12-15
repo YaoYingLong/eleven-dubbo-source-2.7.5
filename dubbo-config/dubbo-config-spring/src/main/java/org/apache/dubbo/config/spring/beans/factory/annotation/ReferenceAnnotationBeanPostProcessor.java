@@ -118,7 +118,6 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
     // 该方法得到的对象会赋值给@ReferenceBean注解的属性
     @Override
     protected Object doGetInjectedBean(AnnotationAttributes attributes, Object bean, String beanName, Class<?> injectedType, InjectionMetadata.InjectedElement injectedElement) throws Exception {
-
         /**
          * The name of bean that annotated Dubbo's {@link Service @Service} in local Spring {@link ApplicationContext}
          */
@@ -177,10 +176,8 @@ public class ReferenceAnnotationBeanPostProcessor extends AnnotationInjectedBean
      * @since 2.7.3
      */
     private String getReferenceBeanName(AnnotationAttributes attributes, Class<?> interfaceClass) {
-        // id attribute appears since 2.7.3
-        String beanName = getAttribute(attributes, "id");
-        // beanName为null时会进入if判断
-        if (!hasText(beanName)) {
+        String beanName = getAttribute(attributes, "id"); // id attribute appears since 2.7.3
+        if (!hasText(beanName)) { // beanName为null时会进入if判断
             beanName = generateReferenceBeanName(attributes, interfaceClass);
         }
         return beanName;

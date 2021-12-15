@@ -47,7 +47,6 @@ public class Transporters {
         if (handlers == null || handlers.length == 0) {
             throw new IllegalArgumentException("handlers == null");
         }
-
         // 如果bind了多个handler，那么当有一个连接过来时，会循环每个handler去处理连接
         ChannelHandler handler;
         if (handlers.length == 1) {
@@ -55,9 +54,7 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
-
-        // 调用NettyTransporter去绑定，Transporter表示网络传输层
-        return getTransporter().bind(url, handler);
+        return getTransporter().bind(url, handler);// 调用NettyTransporter去绑定，Transporter表示网络传输层
     }
 
     public static Client connect(String url, ChannelHandler... handler) throws RemotingException {

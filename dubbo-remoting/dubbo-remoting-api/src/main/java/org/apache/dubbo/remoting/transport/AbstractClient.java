@@ -53,16 +53,12 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
 
     public AbstractClient(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
-
         needReconnect = url.getParameter(Constants.SEND_RECONNECT_KEY, false);
-
         try {
             doOpen();
         } catch (Throwable t) {
             close();
-            throw new RemotingException(url.toInetSocketAddress(), null,
-                    "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress()
-                            + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
+            throw new RemotingException(url.toInetSocketAddress(), null, "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
         try {
             // connect.
@@ -75,22 +71,15 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
                 close();
                 throw t;
             } else {
-                logger.warn("Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress()
-                        + " connect to the server " + getRemoteAddress() + " (check == false, ignore and retry later!), cause: " + t.getMessage(), t);
+                logger.warn("Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() + " connect to the server " + getRemoteAddress() + " (check == false, ignore and retry later!), cause: " + t.getMessage(), t);
             }
         } catch (Throwable t) {
             close();
-            throw new RemotingException(url.toInetSocketAddress(), null,
-                    "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress()
-                            + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
+            throw new RemotingException(url.toInetSocketAddress(), null, "Failed to start " + getClass().getSimpleName() + " " + NetUtils.getLocalAddress() + " connect to the server " + getRemoteAddress() + ", cause: " + t.getMessage(), t);
         }
-
         // 得到消费端的线程池
-        executor = (ExecutorService) ExtensionLoader.getExtensionLoader(DataStore.class)
-                .getDefaultExtension().get(CONSUMER_SIDE, Integer.toString(url.getPort()));
-
-        ExtensionLoader.getExtensionLoader(DataStore.class)
-                .getDefaultExtension().remove(CONSUMER_SIDE, Integer.toString(url.getPort()));
+        executor = (ExecutorService) ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension().get(CONSUMER_SIDE, Integer.toString(url.getPort()));
+        ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension().remove(CONSUMER_SIDE, Integer.toString(url.getPort()));
     }
 
     protected static ChannelHandler wrapChannelHandler(URL url, ChannelHandler handler) {
@@ -180,37 +169,24 @@ public abstract class AbstractClient extends AbstractEndpoint implements Client 
     }
 
     protected void connect() throws RemotingException {
-
         connectLock.lock();
-
         try {
-
             if (isConnected()) {
                 return;
             }
-
             doConnect();
-
             if (!isConnected()) {
-                throw new RemotingException(this, "Failed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " "
-                        + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion()
-                        + ", cause: Connect wait timeout: " + getConnectTimeout() + "ms.");
+                throw new RemotingException(this, "Failed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " " + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion() + ", cause: Connect wait timeout: " + getConnectTimeout() + "ms.");
 
             } else {
                 if (logger.isInfoEnabled()) {
-                    logger.info("Succeed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " "
-                            + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion()
-                            + ", channel is " + this.getChannel());
+                    logger.info("Succeed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " " + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion() + ", channel is " + this.getChannel());
                 }
             }
-
         } catch (RemotingException e) {
             throw e;
-
         } catch (Throwable e) {
-            throw new RemotingException(this, "Failed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " "
-                    + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion()
-                    + ", cause: " + e.getMessage(), e);
+            throw new RemotingException(this, "Failed connect to server " + getRemoteAddress() + " from " + getClass().getSimpleName() + " " + NetUtils.getLocalHost() + " using dubbo version " + Version.getVersion() + ", cause: " + e.getMessage(), e);
 
         } finally {
             connectLock.unlock();

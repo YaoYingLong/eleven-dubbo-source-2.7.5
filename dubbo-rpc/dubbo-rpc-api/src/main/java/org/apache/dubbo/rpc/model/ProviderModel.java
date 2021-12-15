@@ -36,11 +36,9 @@ public class ProviderModel {
         if (null == serviceInstance) {
             throw new IllegalArgumentException("Service[" + serviceName + "]Target is NULL.");
         }
-
         this.serviceName = serviceName;
         this.serviceInstance = serviceInstance;
         this.serviceInterfaceClass = serviceInterfaceClass;
-
         initMethod();
     }
 
@@ -78,21 +76,15 @@ public class ProviderModel {
     }
 
     private void initMethod() {
-        Method[] methodsToExport = null;
-        methodsToExport = this.serviceInterfaceClass.getMethods();
-
-        // 遍历接口所有的方法
-        for (Method method : methodsToExport) {
+        Method[] methodsToExport = this.serviceInterfaceClass.getMethods();
+        for (Method method : methodsToExport) { // 遍历接口所有的方法
             method.setAccessible(true);
-
-            // methods表示的是某个方法对应的ProviderMethodModel
-            // methods为什么是一个list？应为method.getName返回的仅仅只有方法名，不包括方法参数列表，有可能存在重载
+            // methods表示是某个方法对应的ProviderMethodModel，method.getName返回的仅仅只有方法名，不包括方法参数列表，有可能存在重载
             List<ProviderMethodModel> methodModels = methods.get(method.getName());
             if (methodModels == null) {
                 methodModels = new ArrayList<ProviderMethodModel>(1);
                 methods.put(method.getName(), methodModels);
             }
-
             methodModels.add(new ProviderMethodModel(method, serviceName));
         }
     }

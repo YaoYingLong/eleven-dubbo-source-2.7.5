@@ -40,9 +40,7 @@ public class JdkProxyFactory extends AbstractProxyFactory {
     public <T> Invoker<T> getInvoker(T proxy, Class<T> type, URL url) {
         return new AbstractProxyInvoker<T>(proxy, type, url) {
             @Override
-            protected Object doInvoke(T proxy, String methodName,
-                                      Class<?>[] parameterTypes,
-                                      Object[] arguments) throws Throwable {
+            protected Object doInvoke(T proxy, String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Throwable {
                 Method method = proxy.getClass().getMethod(methodName, parameterTypes);
                 return method.invoke(proxy, arguments);
             }

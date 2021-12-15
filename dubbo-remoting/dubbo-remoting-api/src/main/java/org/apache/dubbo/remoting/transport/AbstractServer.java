@@ -58,7 +58,6 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
     public AbstractServer(URL url, ChannelHandler handler) throws RemotingException {
         super(url, handler);
         localAddress = getUrl().toInetSocketAddress();
-
         String bindIp = getUrl().getParameter(Constants.BIND_IP_KEY, getUrl().getHost());
         int bindPort = getUrl().getParameter(Constants.BIND_PORT_KEY, getUrl().getPort());
         if (url.getParameter(ANYHOST_KEY, false) || NetUtils.isInvalidLocalHost(bindIp)) {
@@ -73,8 +72,7 @@ public abstract class AbstractServer extends AbstractEndpoint implements Server 
                 logger.info("Start " + getClass().getSimpleName() + " bind " + getBindAddress() + ", export " + getLocalAddress());
             }
         } catch (Throwable t) {
-            throw new RemotingException(url.toInetSocketAddress(), null, "Failed to bind " + getClass().getSimpleName()
-                    + " on " + getLocalAddress() + ", cause: " + t.getMessage(), t);
+            throw new RemotingException(url.toInetSocketAddress(), null, "Failed to bind " + getClass().getSimpleName() + " on " + getLocalAddress() + ", cause: " + t.getMessage(), t);
         }
         //fixme replace this with better method
         DataStore dataStore = ExtensionLoader.getExtensionLoader(DataStore.class).getDefaultExtension();

@@ -103,7 +103,6 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
         configureModuleConfig(configBean);
         // 设置applicationContext、interfaceName、consumer、methods属性，并调用ReferenceBean对象的afterPropertiesSet方法
         postConfigureBean(attributes, configBean);
-
     }
 
     protected abstract void preConfigureBean(AnnotationAttributes attributes, C configBean) throws Exception;
@@ -114,7 +113,6 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
         // 获得注册中心对应的RegistryConfig对象
         List<RegistryConfig> registryConfigs = getBeans(applicationContext, registryConfigBeanIds, RegistryConfig.class);
         configBean.setRegistries(registryConfigs); // 设置registryConfigs属性值
-
     }
 
     private void configureMonitorConfig(C configBean) {
@@ -122,7 +120,6 @@ public abstract class AnnotatedInterfaceConfigBeanBuilder<C extends AbstractInte
         // 从Spring容器获取MonitorConfig的bean对象
         MonitorConfig monitorConfig = getOptionalBean(applicationContext, monitorBeanName, MonitorConfig.class);
         configBean.setMonitor(monitorConfig);
-
     }
 
     private void configureApplicationConfig(C configBean) {

@@ -113,20 +113,13 @@ public class DubboProtocol extends AbstractProtocol {
     private final ConcurrentMap<String, String> stubServiceMethodsMap = new ConcurrentHashMap<>();
 
     private ExchangeHandler requestHandler = new ExchangeHandlerAdapter() {
-
         @Override
         public CompletableFuture<Object> reply(ExchangeChannel channel, Object message) throws RemotingException {
-
             if (!(message instanceof Invocation)) {
-                throw new RemotingException(channel, "Unsupported request: "
-                        + (message == null ? null : (message.getClass().getName() + ": " + message))
-                        + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
+                throw new RemotingException(channel, "Unsupported request: " + (message == null ? null : (message.getClass().getName() + ": " + message)) + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
             }
-
-            // 转成Invocation对象，要开始用反射执行方法了
-            Invocation inv = (Invocation) message;
+            Invocation inv = (Invocation) message; // 转成Invocation对象，要开始用反射执行方法了
             Invoker<?> invoker = getInvoker(channel, inv);  // 服务实现者
-
             // need to consider backward-compatibility if it's a callback
             if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
@@ -143,37 +136,27 @@ public class DubboProtocol extends AbstractProtocol {
                     }
                 }
                 if (!hasMethod) {
-                    logger.warn(new IllegalStateException("The methodName " + inv.getMethodName()
-                            + " not found in callback service interface ,invoke will be ignored."
-                            + " please update the api interface. url is:"
-                            + invoker.getUrl()) + " ,invocation is :" + inv);
+                    logger.warn(new IllegalStateException("The methodName " + inv.getMethodName() + " not found in callback service interface ,invoke will be ignored. please update the api interface. url is:" + invoker.getUrl()) + " ,invocation is :" + inv);
                     return null;
                 }
             }
-            // 这里设置了，service中才能拿到remoteAddress
-            RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
-            // 执行服务，得到结果
-            Result result = invoker.invoke(inv);
-            // 返回一个CompletableFuture
-            return result.completionFuture().thenApply(Function.identity());
+            RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());// 这里设置了，service中才能拿到remoteAddress
+            Result result = invoker.invoke(inv);// 执行服务，得到结果
+            return result.completionFuture().thenApply(Function.identity()); // 返回一个CompletableFuture
         }
 
         @Override
         public void received(Channel channel, Object message) throws RemotingException {
             if (message instanceof Invocation) {
-                // 这是服务端接收到Invocation时的处理逻辑
-                reply((ExchangeChannel) channel, message);
-
+                reply((ExchangeChannel) channel, message);  // 这是服务端接收到Invocation时的处理逻辑
             } else {
                 super.received(channel, message);
             }
         }
-
         @Override
         public void connected(Channel channel) throws RemotingException {
             invoke(channel, ON_CONNECT_KEY);
         }
-
         @Override
         public void disconnected(Channel channel) throws RemotingException {
             if (logger.isDebugEnabled()) {
@@ -181,7 +164,6 @@ public class DubboProtocol extends AbstractProtocol {
             }
             invoke(channel, ON_DISCONNECT_KEY);
         }
-
         private void invoke(Channel channel, String methodKey) {
             Invocation invocation = createInvocation(channel, channel.getUrl(), methodKey);
             if (invocation != null) {
@@ -192,13 +174,11 @@ public class DubboProtocol extends AbstractProtocol {
                 }
             }
         }
-
         private Invocation createInvocation(Channel channel, URL url, String methodKey) {
             String method = url.getParameter(methodKey);
             if (method == null || method.length() == 0) {
                 return null;
             }
-
             RpcInvocation invocation = new RpcInvocation(method, new Class<?>[0], new Object[0]);
             invocation.setAttachment(PATH_KEY, url.getPath());
             invocation.setAttachment(GROUP_KEY, url.getParameter(GROUP_KEY));
@@ -207,7 +187,6 @@ public class DubboProtocol extends AbstractProtocol {
             if (url.getParameter(STUB_EVENT_KEY, false)) {
                 invocation.setAttachment(STUB_EVENT_KEY, Boolean.TRUE.toString());
             }
-
             return invocation;
         }
     };
@@ -250,31 +229,23 @@ public class DubboProtocol extends AbstractProtocol {
         boolean isStubServiceInvoke = false;
         int port = channel.getLocalAddress().getPort();
         String path = inv.getAttachments().get(PATH_KEY);
-
         // if it's callback service on client side
         isStubServiceInvoke = Boolean.TRUE.toString().equals(inv.getAttachments().get(STUB_EVENT_KEY));
         if (isStubServiceInvoke) {
             port = channel.getRemoteAddress().getPort();
         }
-
-        //callback
-        isCallBackServiceInvoke = isClientSide(channel) && !isStubServiceInvoke;
+        isCallBackServiceInvoke = isClientSide(channel) && !isStubServiceInvoke; //callback
         if (isCallBackServiceInvoke) {
             path += "." + inv.getAttachments().get(CALLBACK_SERVICE_KEY);
             inv.getAttachments().put(IS_CALLBACK_SERVICE_INVOKE, Boolean.TRUE.toString());
         }
-
         // 从请求中拿到serviceKey，从exporterMap中拿到已经导出了的服务
         String serviceKey = serviceKey(port, path, inv.getAttachments().get(VERSION_KEY), inv.getAttachments().get(GROUP_KEY));
         DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
-
         if (exporter == null) {
-            throw new RemotingException(channel, "Not found exported service: " + serviceKey + " in " + exporterMap.keySet() + ", may be version or group mismatch " +
-                    ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress() + ", message:" + inv);
+            throw new RemotingException(channel, "Not found exported service: " + serviceKey + " in " + exporterMap.keySet() + ", may be version or group mismatch , channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress() + ", message:" + inv);
         }
-
-        // 拿到服务对应的Invoker
-        return exporter.getInvoker();
+        return exporter.getInvoker(); // 拿到服务对应的Invoker
     }
 
     public Collection<Invoker<?>> getInvokers() {
@@ -289,102 +260,69 @@ public class DubboProtocol extends AbstractProtocol {
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         URL url = invoker.getUrl();
-
-        // export service.
-        String key = serviceKey(url);
-        // 构造一个Exporter进行服务导出
-        DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
+        String key = serviceKey(url); // export service.
+        DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap); // 构造一个Exporter进行服务导出
         exporterMap.put(key, exporter);
-
-        //export an stub service for dispatching event
         Boolean isStubSupportEvent = url.getParameter(STUB_EVENT_KEY, DEFAULT_STUB_EVENT);
         Boolean isCallbackservice = url.getParameter(IS_CALLBACK_SERVICE, false);
-        if (isStubSupportEvent && !isCallbackservice) {
+        if (isStubSupportEvent && !isCallbackservice) { //export an stub service for dispatching event
             String stubServiceMethods = url.getParameter(STUB_EVENT_METHODS_KEY);
             if (stubServiceMethods == null || stubServiceMethods.length() == 0) {
                 if (logger.isWarnEnabled()) {
-                    logger.warn(new IllegalStateException("consumer [" + url.getParameter(INTERFACE_KEY) +
-                            "], has set stubproxy support event ,but no stub methods founded."));
+                    logger.warn(new IllegalStateException("consumer [" + url.getParameter(INTERFACE_KEY) + "], has set stubproxy support event ,but no stub methods founded."));
                 }
-
-            } else {
-                // 服务的stub方法
+            } else {// 服务的stub方法
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
         }
-
-        // 开启NettyServer
-        openServer(url);  //请求--->invocation--->服务key--->exporterMap.get(key)--->exporter--->invoker--->invoker.invoke(invocation)-->执行服务
-
-        // 特殊的一些序列化机制，比如kryo提供了注册机制来注册类，提高序列化和反序列化的速度
-        optimizeSerialization(url);
-
+        openServer(url);  // 开启NettyServer请求--->invocation--->服务key--->exporterMap.get(key)--->exporter--->invoker--->invoker.invoke(invocation)-->执行服务
+        optimizeSerialization(url); // 特殊的一些序列化机制，比如kryo提供了注册机制来注册类，提高序列化和反序列化的速度
         return exporter;
     }
 
     private void openServer(URL url) {
-        // find server.
-        String key = url.getAddress(); // 获得ip地址和port， 192.168.40.17:20880
-
-        // NettyClient, NettyServer
-        //client can export a service which's only for server to invoke
+        String key = url.getAddress(); // find server.获得ip地址和port：192.168.40.17:20880
+        // NettyClient, NettyServer client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
         if (isServer) {
-            // 缓存Server对象
-            ExchangeServer server = serverMap.get(key);
-
-            // DCL，Double Check Lock
-            if (server == null) {
+            ExchangeServer server = serverMap.get(key);// 缓存Server对象
+            if (server == null) {// DCL，Double Check Lock
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
-                        // 创建Server，并进行缓存
-                        serverMap.put(key, createServer(url));
+                        serverMap.put(key, createServer(url)); // 创建Server，并进行缓存
                     }
                 }
-            } else {
-                // server supports reset, use together with override
-                // 服务重新导出时，就会走这里
-                server.reset(url);
+            } else {// server supports reset, use together with override
+                server.reset(url); // 服务重新导出时，就会走这里
             }
         }
     }
 
     private ExchangeServer createServer(URL url) {
-        url = URLBuilder.from(url)
-                // send readonly event when server closes, it's enabled by default
+        url = URLBuilder.from(url)// send readonly event when server closes, it's enabled by default
                 .addParameterIfAbsent(CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString())
-                // enable heartbeat by default
-                .addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT))
+                .addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT))// enable heartbeat by default
                 .addParameter(CODEC_KEY, DubboCodec.NAME)
                 .build();
-
-        // 协议的服务器端实现类型，比如：dubbo协议的mina,netty等，http协议的jetty,servlet等，默认为netty
+        // 协议的服务器端实现类型，如：dubbo协议的mina,netty等，http协议的jetty,servlet等，默认为netty
         String str = url.getParameter(SERVER_KEY, DEFAULT_REMOTING_SERVER);
-
         if (str != null && str.length() > 0 && !ExtensionLoader.getExtensionLoader(Transporter.class).hasExtension(str)) {
             throw new RpcException("Unsupported server type: " + str + ", url: " + url);
         }
-
-        // 通过url绑定端口，和对应的请求处理器
         ExchangeServer server;
-        try {
-            // requestHandler是请求处理器，类型为ExchangeHandler
-            // 表示从url的端口接收到请求后，requestHandler来进行处理
+        try {// 通过url绑定端口，和对应的请求处理器，requestHandler是请求处理器，类型为ExchangeHandler，表示从url的端口接收到请求后，requestHandler来进行处理
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
         }
-
-        // 协议的客户端实现类型，比如：dubbo协议的mina,netty等
-        str = url.getParameter(CLIENT_KEY);
+        str = url.getParameter(CLIENT_KEY);  // 协议的客户端实现类型，比如：dubbo协议的mina,netty等
         if (str != null && str.length() > 0) {
             Set<String> supportedTypes = ExtensionLoader.getExtensionLoader(Transporter.class).getSupportedExtensions();
             if (!supportedTypes.contains(str)) {
                 throw new RpcException("Unsupported client type: " + str);
             }
         }
-
         return server;
     }
 
@@ -393,34 +331,24 @@ public class DubboProtocol extends AbstractProtocol {
         if (StringUtils.isEmpty(className) || optimizers.contains(className)) {
             return;
         }
-
         logger.info("Optimizing the serialization process for Kryo, FST, etc...");
-
         try {
             Class clazz = Thread.currentThread().getContextClassLoader().loadClass(className);
             if (!SerializationOptimizer.class.isAssignableFrom(clazz)) {
                 throw new RpcException("The serialization optimizer " + className + " isn't an instance of " + SerializationOptimizer.class.getName());
             }
-
             SerializationOptimizer optimizer = (SerializationOptimizer) clazz.newInstance();
-
             if (optimizer.getSerializableClasses() == null) {
                 return;
             }
-
             for (Class c : optimizer.getSerializableClasses()) {
                 SerializableClassRegistry.registerClass(c);
             }
-
-            // 特殊的一些序列化机制，比如kryo提供了注册机制来注册类，提高序列化和反序列化的速度
-            optimizers.add(className);
-
+            optimizers.add(className); // 特殊的一些序列化机制，比如kryo提供了注册机制来注册类，提高序列化和反序列化的速度
         } catch (ClassNotFoundException e) {
             throw new RpcException("Cannot find the serialization optimizer class: " + className, e);
-
         } catch (InstantiationException e) {
             throw new RpcException("Cannot instantiate the serialization optimizer class: " + className, e);
-
         } catch (IllegalAccessException e) {
             throw new RpcException("Cannot instantiate the serialization optimizer class: " + className, e);
         }

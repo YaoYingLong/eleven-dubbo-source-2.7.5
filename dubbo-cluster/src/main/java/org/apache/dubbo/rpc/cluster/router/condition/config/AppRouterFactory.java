@@ -44,8 +44,7 @@ public class AppRouterFactory implements RouterFactory {
         return router;
     }
 
-    private Router createRouter(URL url) {
-        // 内部会进行初始化
+    private Router createRouter(URL url) {// 内部会进行初始化
         return new AppRouter(DynamicConfiguration.getDynamicConfiguration(), url);
     }
 }

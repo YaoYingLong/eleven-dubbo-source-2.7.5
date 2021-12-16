@@ -45,17 +45,11 @@ public class ConsumerModel {
      * @param methods Methods of service class
      * @param attributes Attributes of methods.
      */
-    public ConsumerModel(String serviceName
-            , Class<?> serviceInterfaceClass
-            , Object proxyObject
-            , Method[] methods
-            , Map<String, Object> attributes) {
-
+    public ConsumerModel(String serviceName, Class<?> serviceInterfaceClass, Object proxyObject, Method[] methods, Map<String, Object> attributes) {
         Assert.notEmptyString(serviceName, "Service name can't be null or blank");
         Assert.notNull(serviceInterfaceClass, "Service interface class can't null");
         Assert.notNull(proxyObject, "Proxy object can't be null");
         Assert.notNull(methods, "Methods can't be null");
-
         this.serviceName = serviceName;
         this.serviceInterfaceClass = serviceInterfaceClass;
         this.proxyObject = proxyObject;

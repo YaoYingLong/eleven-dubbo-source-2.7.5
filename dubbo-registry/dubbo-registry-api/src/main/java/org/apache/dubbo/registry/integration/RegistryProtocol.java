@@ -410,37 +410,23 @@ public class RegistryProtocol implements Protocol {
     @Override
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
-
-        // 从registry://的url中获取对应的注册中心，比如zookeeper， 默认为dubbo，dubbo提供了自带的注册中心实现
-        // url由 registry:// 改变为---> zookeeper://
-        url = URLBuilder.from(url)
-                .setProtocol(url.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY))
-                .removeParameter(REGISTRY_KEY)
-                .build();
-
-        // 拿到注册中心实现，ZookeeperRegistry
-        Registry registry = registryFactory.getRegistry(url);
-
-        // 下面这个代码，通过过git历史提交记录是用来解决SimpleRegistry不可用的问题
-        if (RegistryService.class.equals(type)) {
+        // 从registry://的url中获取对应的注册中心，如zookeeper，默认为dubbo，dubbo提供了自带的注册中心实现，url由registry://改变为--->zookeeper://
+        url = URLBuilder.from(url).setProtocol(url.getParameter(REGISTRY_KEY, DEFAULT_REGISTRY)).removeParameter(REGISTRY_KEY).build();
+        Registry registry = registryFactory.getRegistry(url); // 拿到注册中心实现，ZookeeperRegistry
+        if (RegistryService.class.equals(type)) { // 用来解决SimpleRegistry不可用的问题
             return proxyFactory.getInvoker((T) registry, type, url);
         }
-
-        // qs表示 queryString, 表示url中的参数，表示消费者引入服务时所配置的参数
+        // qs表示queryString, 表示url中的参数，表示消费者引入服务时所配置的参数
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
-
         // group="a,b" or group="*"
         // https://dubbo.apache.org/zh/docs/v2.7/user/examples/group-merger/
         String group = qs.get(GROUP_KEY);
         if (group != null && group.length() > 0) {
             if ((COMMA_SPLIT_PATTERN.split(group)).length > 1 || "*".equals(group)) {
-                // group有多个值，这里的cluster为MergeableCluster
-                return doRefer(getMergeableCluster(), registry, type, url);
+                return doRefer(getMergeableCluster(), registry, type, url); // group有多个值，这里的cluster为MergeableCluster
             }
         }
-
-        // 这里的cluster是cluster的Adaptive对象,扩展点
-        return doRefer(cluster, registry, type, url);
+        return doRefer(cluster, registry, type, url); // 这里的cluster是cluster的Adaptive对象,扩展点
     }
 
     private Cluster getMergeableCluster() {
@@ -457,42 +443,28 @@ public class RegistryProtocol implements Protocol {
      * @return
      */
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
-        // RegistryDirectory表示动态服务目录，会和注册中心的数据保持同步
-        // type表示一个服务对应一个RegistryDirectory，url表示注册中心地址
-        // 在消费端，最核心的就是RegistryDirectory
-        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        // RegistryDirectory表示动态服务目录，会和注册中心的数据保持同步，type表示一个服务对应一个RegistryDirectory，url表示注册中心地址
+        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url); // 在消费端，最核心的就是RegistryDirectory
         directory.setRegistry(registry);
         directory.setProtocol(protocol);
-
-
-        // all attributes of REFER_KEY
-        // 引入服务所配置的参数
+        // all attributes of REFER_KEY 引入服务所配置的参数
         Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
-
         // 消费者url
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
             directory.setRegisteredConsumerUrl(getRegisteredConsumerUrl(subscribeUrl, url));
-
-            // 注册简化后的消费url
-            registry.register(directory.getRegisteredConsumerUrl());
+            registry.register(directory.getRegisteredConsumerUrl()); // 注册消费者，注册简化后的消费url
         }
-
-        // 构造路由链,路由链会在引入服务时按路由条件进行过滤
-        // 路由链是动态服务目录中的一个属性，通过路由链可以过滤某些服务提供者
+        // 构造路由链，路由链会在引入服务时按路由条件进行过滤，路由链是动态服务目录中的一个属性，通过路由链可以过滤某些服务提供者
         directory.buildRouterChain(subscribeUrl);
-
         // 服务目录需要订阅的几个路径
         // 当前应用所对应的动态配置目录：/dubbo/config/dubbo/dubbo-demo-consumer-application.configurators
         // 当前所引入的服务的动态配置目录：/dubbo/config/dubbo/org.apache.dubbo.demo.DemoService:1.1.1:g1.configurators
         // 当前所引入的服务的提供者目录：/dubbo/org.apache.dubbo.demo.DemoService/providers
         // 当前所引入的服务的老版本动态配置目录：/dubbo/org.apache.dubbo.demo.DemoService/configurators
         // 当前所引入的服务的老版本路由器目录：/dubbo/org.apache.dubbo.demo.DemoService/routers
-        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
-                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
-
-        // 利用传进来的cluster，join得到invoker, MockClusterWrapper
-        Invoker invoker = cluster.join(directory);
+        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY, PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
+        Invoker invoker = cluster.join(directory);  // 利用传进来的cluster，join得到invoker, MockClusterWrapper
         ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
         return invoker;
     }
@@ -587,19 +559,14 @@ public class RegistryProtocol implements Protocol {
      * 2.No need to re-register to the registry after notify
      * 3.The invoker passed by the export method , would better to be the invoker of exporter
      */
-    // 当subscribeUrl对应的数据发生了改变，OverrideListener将收到通知
-    private class OverrideListener implements NotifyListener {
+    private class OverrideListener implements NotifyListener {// 当subscribeUrl对应的数据发生了改变，OverrideListener将收到通知
         private final URL subscribeUrl;
         private final Invoker originInvoker;
-
-
         private List<Configurator> configurators;
-
         public OverrideListener(URL subscribeUrl, Invoker originalInvoker) {
             this.subscribeUrl = subscribeUrl;
             this.originInvoker = originalInvoker;
         }
-
         /**
          * @param urls The list of registered information, is always not empty, The meaning is the same as the
          *             return value of {@link org.apache.dubbo.registry.RegistryService#lookup(URL)}.
@@ -609,14 +576,12 @@ public class RegistryProtocol implements Protocol {
             logger.debug("original override urls: " + urls);
             List<URL> matchedUrls = getMatchedUrls(urls, subscribeUrl.addParameter(CATEGORY_KEY, CONFIGURATORS_CATEGORY));
             logger.debug("subscribe url: " + subscribeUrl + ", override urls: " + matchedUrls);
-            // No matching results
-            if (matchedUrls.isEmpty()) {
+            if (matchedUrls.isEmpty()) { // No matching results
                 return;
             }
             // 对发生了变化的url进行过滤，只取url是override协议，或者参数category等于configurators的url
             this.configurators = Configurator.toConfigurators(classifyUrls(matchedUrls, UrlUtils::isConfigurator)).orElse(configurators);
-            // 根据Override协议修改
-            doOverrideIfNecessary();
+            doOverrideIfNecessary();  // 根据Override协议修改
         }
 
         public synchronized void doOverrideIfNecessary() {
@@ -626,32 +591,23 @@ public class RegistryProtocol implements Protocol {
             } else {
                 invoker = originInvoker;
             }
-            //The origin invoker 当前服务的原始服务提供者url
-            URL originUrl = RegistryProtocol.this.getProviderUrl(invoker);
+            URL originUrl = RegistryProtocol.this.getProviderUrl(invoker); //The origin invoker 当前服务的原始服务提供者url
             String key = getCacheKey(originInvoker);
-
             ExporterChangeableWrapper<?> exporter = bounds.get(key);
             if (exporter == null) {
                 logger.warn(new IllegalStateException("error state, exporter should not be null"));
                 return;
             }
-
             //The current, may have been merged many times，当前服务被导出的url
             URL currentUrl = exporter.getInvoker().getUrl();
-
             //根据configurators修改url，configurators是全量的，并不是某个新增的或删除的，所以是基于原始的url进行修改，并不是基于currentUrl
             //Merged with this configuration
             URL newUrl = getConfigedInvokerUrl(configurators, originUrl);
-
             newUrl = getConfigedInvokerUrl(providerConfigurationListener.getConfigurators(), newUrl);
-            newUrl = getConfigedInvokerUrl(serviceConfigurationListeners.get(originUrl.getServiceKey())
-                    .getConfigurators(), newUrl);
-
-            // 修改过的url如果和目前的url不相同，则重新按newUrl导出
-            if (!currentUrl.equals(newUrl)) {
+            newUrl = getConfigedInvokerUrl(serviceConfigurationListeners.get(originUrl.getServiceKey()).getConfigurators(), newUrl);
+            if (!currentUrl.equals(newUrl)) { // 修改过的url如果和目前的url不相同，则重新按newUrl导出
                 RegistryProtocol.this.reExport(originInvoker, newUrl);
-                logger.info("exported provider url changed, origin url: " + originUrl +
-                        ", old export url: " + currentUrl + ", new export url: " + newUrl);
+                logger.info("exported provider url changed, origin url: " + originUrl + ", old export url: " + currentUrl + ", new export url: " + newUrl);
             }
         }
 
@@ -663,7 +619,6 @@ public class RegistryProtocol implements Protocol {
                 if (url.getParameter(CATEGORY_KEY) == null && OVERRIDE_PROTOCOL.equals(url.getProtocol())) {
                     overrideUrl = url.addParameter(CATEGORY_KEY, CONFIGURATORS_CATEGORY);
                 }
-
                 // Check whether url is to be applied to the current service
                 if (UrlUtils.isMatch(currentSubscribe, overrideUrl)) {
                     result.add(url);
@@ -676,18 +631,14 @@ public class RegistryProtocol implements Protocol {
     private class ServiceConfigurationListener extends AbstractConfiguratorListener {
         private URL providerUrl;
         private OverrideListener notifyListener;
-
         public ServiceConfigurationListener(URL providerUrl, OverrideListener notifyListener) {
             this.providerUrl = providerUrl;
             this.notifyListener = notifyListener;
-            // 订阅 服务接口名+group+version+".configurators"
-            this.initWith(DynamicConfiguration.getRuleKey(providerUrl) + CONFIGURATORS_SUFFIX);
+            this.initWith(DynamicConfiguration.getRuleKey(providerUrl) + CONFIGURATORS_SUFFIX); // 订阅 服务接口名+group+version+".configurators"
         }
-
         private <T> URL overrideUrl(URL providerUrl) {
             return RegistryProtocol.getConfigedInvokerUrl(configurators, providerUrl);
         }
-
         @Override
         protected void notifyOverrides() {
             notifyListener.doOverrideIfNecessary();
@@ -696,12 +647,9 @@ public class RegistryProtocol implements Protocol {
 
     //
     private class ProviderConfigurationListener extends AbstractConfiguratorListener {
-
-        public ProviderConfigurationListener() {
-            // // 订阅 应用名+".configurators"
+        public ProviderConfigurationListener() {// // 订阅 应用名+".configurators"
             this.initWith(ApplicationModel.getApplication() + CONFIGURATORS_SUFFIX);
         }
-
         /**
          * Get existing configuration rule and override provider url before exporting.
          *
@@ -709,8 +657,7 @@ public class RegistryProtocol implements Protocol {
          * @param <T>
          * @return
          */
-        private <T> URL overrideUrl(URL providerUrl) {
-            // 通过configurators去修改/装配providerUrl
+        private <T> URL overrideUrl(URL providerUrl) {// 通过configurators去修改/装配providerUrl
             return RegistryProtocol.getConfigedInvokerUrl(configurators, providerUrl);
         }
 
@@ -757,33 +704,24 @@ public class RegistryProtocol implements Protocol {
         public void unexport() {
             String key = getCacheKey(this.originInvoker);
             bounds.remove(key);
-
-            // 从注册中心删除服务URL
-            Registry registry = RegistryProtocol.INSTANCE.getRegistry(originInvoker);
+            Registry registry = RegistryProtocol.INSTANCE.getRegistry(originInvoker); // 从注册中心删除服务URL
             try {
                 registry.unregister(registerUrl);
             } catch (Throwable t) {
                 logger.warn(t.getMessage(), t);
             }
-
-
-            try {
-                // 解绑当前服务的Listener
+            try {// 解绑当前服务的Listener
                 NotifyListener listener = RegistryProtocol.INSTANCE.overrideListeners.remove(subscribeUrl);
                 registry.unsubscribe(subscribeUrl, listener);
-                DynamicConfiguration.getDynamicConfiguration()
-                        .removeListener(subscribeUrl.getServiceKey() + CONFIGURATORS_SUFFIX,
-                                serviceConfigurationListeners.get(subscribeUrl.getServiceKey()));
+                DynamicConfiguration.getDynamicConfiguration().removeListener(subscribeUrl.getServiceKey() + CONFIGURATORS_SUFFIX, serviceConfigurationListeners.get(subscribeUrl.getServiceKey()));
             } catch (Throwable t) {
                 logger.warn(t.getMessage(), t);
             }
-
             executor.submit(() -> {
                 try {
                     int timeout = ConfigurationUtils.getServerShutdownTimeout();
                     if (timeout > 0) {
-                        logger.info("Waiting " + timeout + "ms for registry to notify all consumers before unexport. " +
-                                "Usually, this is called when you use dubbo API");
+                        logger.info("Waiting " + timeout + "ms for registry to notify all consumers before unexport. Usually, this is called when you use dubbo API");
                         Thread.sleep(timeout);
                     }
                     exporter.unexport();

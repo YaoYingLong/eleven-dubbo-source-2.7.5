@@ -123,9 +123,7 @@ public interface DynamicConfiguration extends Configuration {
      */
     static DynamicConfiguration getDynamicConfiguration() {
         Optional<Configuration> optional = Environment.getInstance().getDynamicConfiguration();
-        return (DynamicConfiguration) optional.orElseGet(() -> getExtensionLoader(DynamicConfigurationFactory.class)
-                .getDefaultExtension()
-                .getDynamicConfiguration(null));
+        return (DynamicConfiguration) optional.orElseGet(() -> getExtensionLoader(DynamicConfigurationFactory.class).getDefaultExtension().getDynamicConfiguration(null));
     }
 
      /**

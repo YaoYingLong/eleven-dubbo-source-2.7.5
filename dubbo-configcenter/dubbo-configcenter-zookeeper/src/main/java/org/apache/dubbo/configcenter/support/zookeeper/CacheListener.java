@@ -82,16 +82,13 @@ public class CacheListener implements DataListener {
         if (eventType == null) {
             return;
         }
-
         if (eventType == EventType.INITIALIZED) {
             initializedLatch.countDown();
             return;
         }
-
         if (path == null || (value == null && eventType != EventType.NodeDeleted)) {
             return;
         }
-
         // TODO We only care the changes happened on a specific path level, for example
         //  /dubbo/config/dubbo/configurators, other config changes not in this level will be ignored,
         if (path.split("/").length >= MIN_PATH_DEPTH) {
@@ -110,7 +107,6 @@ public class CacheListener implements DataListener {
                 default:
                     return;
             }
-
             ConfigChangeEvent configChangeEvent = new ConfigChangeEvent(key, (String) value, changeType);
             Set<ConfigurationListener> listeners = keyListeners.get(path);
             if (CollectionUtils.isNotEmpty(listeners)) {

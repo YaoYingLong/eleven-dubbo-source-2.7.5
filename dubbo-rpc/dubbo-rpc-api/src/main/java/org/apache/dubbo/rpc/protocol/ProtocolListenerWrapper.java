@@ -38,21 +38,17 @@ import static org.apache.dubbo.rpc.Constants.EXPORTER_LISTENER_KEY;
  * ListenerProtocol
  */
 public class ProtocolListenerWrapper implements Protocol {
-
     private final Protocol protocol;
-
     public ProtocolListenerWrapper(Protocol protocol) {
         if (protocol == null) {
             throw new IllegalArgumentException("protocol == null");
         }
         this.protocol = protocol;
     }
-
     @Override
     public int getDefaultPort() {
         return protocol.getDefaultPort();
     }
-
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
@@ -64,21 +60,15 @@ public class ProtocolListenerWrapper implements Protocol {
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));
     }
-
     @Override
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {  // dubbo://
             return protocol.refer(type, url);
         }
-        return new ListenerInvokerWrapper<T>(protocol.refer(type, url),
-                Collections.unmodifiableList(
-                        ExtensionLoader.getExtensionLoader(InvokerListener.class)
-                                .getActivateExtension(url, INVOKER_LISTENER_KEY)));
+        return new ListenerInvokerWrapper<T>(protocol.refer(type, url), Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(InvokerListener.class).getActivateExtension(url, INVOKER_LISTENER_KEY)));
     }
-
     @Override
     public void destroy() {
         protocol.destroy();
     }
-
 }

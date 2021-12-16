@@ -54,20 +54,16 @@ public class ZookeeperDynamicConfiguration implements DynamicConfiguration {
     ZookeeperDynamicConfiguration(URL url, ZookeeperTransporter zookeeperTransporter) {
         this.url = url;
         rootPath = PATH_SEPARATOR + url.getParameter(CONFIG_NAMESPACE_KEY, DEFAULT_GROUP) + "/config";
-
         initializedLatch = new CountDownLatch(1);
         this.cacheListener = new CacheListener(rootPath, initializedLatch);
         this.executor = Executors.newFixedThreadPool(1, new NamedThreadFactory(this.getClass().getSimpleName(), true));
-
         zkClient = zookeeperTransporter.connect(url);
         zkClient.addDataListener(rootPath, cacheListener, executor);
-        try {
-            // Wait for connection
+        try {// Wait for connection
             long timeout = url.getParameter("init.timeout", 5000);
             boolean isCountDown = this.initializedLatch.await(timeout, TimeUnit.MILLISECONDS);
             if (!isCountDown) {
-                throw new IllegalStateException("Failed to receive INITIALIZED event from zookeeper, pls. check if url "
-                        + url + " is correct");
+                throw new IllegalStateException("Failed to receive INITIALIZED event from zookeeper, pls. check if url " + url + " is correct");
             }
         } catch (InterruptedException e) {
             logger.warn("Failed to build local cache for config center (zookeeper)." + url);

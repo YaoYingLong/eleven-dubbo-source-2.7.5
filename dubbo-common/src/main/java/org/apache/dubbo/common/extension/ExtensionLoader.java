@@ -392,8 +392,7 @@ public class ExtensionLoader<T> {
                 throw new IllegalStateException("Extension name is blank (Extension " + type + ")!");
             }
             if (cachedClasses.get().containsKey(name)) {
-                throw new IllegalStateException("Extension name " +
-                        name + " already exists (Extension " + type + ")!");
+                throw new IllegalStateException("Extension name " + name + " already exists (Extension " + type + ")!");
             }
 
             cachedNames.put(clazz, name);

@@ -43,12 +43,10 @@ public class MockInvokersSelector extends AbstractRouter {
     }
 
     @Override
-    public <T> List<Invoker<T>> route(final List<Invoker<T>> invokers,
-                                      URL url, final Invocation invocation) throws RpcException {
+    public <T> List<Invoker<T>> route(final List<Invoker<T>> invokers, URL url, final Invocation invocation) throws RpcException {
         if (CollectionUtils.isEmpty(invokers)) {
             return invokers;
         }
-
         if (invocation.getAttachments() == null) {
             return getNormalInvokers(invokers);
         } else {

@@ -86,29 +86,22 @@ public abstract class AbstractRegistryFactory implements RegistryFactory {
 
     @Override
     public Registry getRegistry(URL url) {
-        url = URLBuilder.from(url)
-                .setPath(RegistryService.class.getName())
-                .addParameter(INTERFACE_KEY, RegistryService.class.getName())
-                .removeParameters(EXPORT_KEY, REFER_KEY)
-                .build();
+        url = URLBuilder.from(url).setPath(RegistryService.class.getName()).addParameter(INTERFACE_KEY, RegistryService.class.getName()).removeParameters(EXPORT_KEY, REFER_KEY).build();
         String key = url.toServiceStringWithoutResolving();
-        // Lock the registry access process to ensure a single instance of the registry
-        LOCK.lock();
+        LOCK.lock(); // Lock the registry access process to ensure a single instance of the registry
         try {
             Registry registry = REGISTRIES.get(key);
             if (registry != null) {
                 return registry;
             }
-            //create registry by spi/ioc
-            registry = createRegistry(url);
+            registry = createRegistry(url); //create registry by spi/ioc
             if (registry == null) {
                 throw new IllegalStateException("Can not create registry " + url);
             }
             REGISTRIES.put(key, registry);
             return registry;
         } finally {
-            // Release the lock
-            LOCK.unlock();
+            LOCK.unlock(); // Release the lock
         }
     }
 

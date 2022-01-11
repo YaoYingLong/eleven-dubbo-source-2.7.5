@@ -254,30 +254,23 @@ public abstract class AbstractConfig implements Serializable {
         if (methodConfig == null || (methodConfig.getOninvoke() == null && methodConfig.getOnreturn() == null && methodConfig.getOnthrow() == null)) {
             return null;
         }
-
         //check config conflict
         if (Boolean.FALSE.equals(methodConfig.isReturn()) && (methodConfig.getOnreturn() != null || methodConfig.getOnthrow() != null)) {
             throw new IllegalStateException("method config error : return attribute must be set true when onreturn or onthrow has been set.");
         }
-
-
         ConsumerMethodModel.AsyncMethodInfo asyncMethodInfo = new ConsumerMethodModel.AsyncMethodInfo();
-
         asyncMethodInfo.setOninvokeInstance(methodConfig.getOninvoke());
         asyncMethodInfo.setOnreturnInstance(methodConfig.getOnreturn());
         asyncMethodInfo.setOnthrowInstance(methodConfig.getOnthrow());
-
         try {
             String oninvokeMethod = methodConfig.getOninvokeMethod();
             if (StringUtils.isNotEmpty(oninvokeMethod)) {
                 asyncMethodInfo.setOninvokeMethod(getMethodByName(methodConfig.getOninvoke().getClass(), oninvokeMethod));
             }
-
             String onreturnMethod = methodConfig.getOnreturnMethod();
             if (StringUtils.isNotEmpty(onreturnMethod)) {
                 asyncMethodInfo.setOnreturnMethod(getMethodByName(methodConfig.getOnreturn().getClass(), onreturnMethod));
             }
-
             String onthrowMethod = methodConfig.getOnthrowMethod();
             if (StringUtils.isNotEmpty(onthrowMethod)) {
                 asyncMethodInfo.setOnthrowMethod(getMethodByName(methodConfig.getOnthrow().getClass(), onthrowMethod));
@@ -285,7 +278,6 @@ public abstract class AbstractConfig implements Serializable {
         } catch (Exception e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
-
         return asyncMethodInfo;
     }
 

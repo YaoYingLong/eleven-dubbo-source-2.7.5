@@ -52,19 +52,12 @@ public class RouterChain<T> {
         // 1 = {TagRouterFactory@2881}      // 标签路由
         // 2 = {AppRouterFactory@2882}      // 应用条件路由
         // 3 = {ServiceRouterFactory@2883}  // 服务条件路由
-        List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class)
-                .getActivateExtension(url, (String[]) null);
-
-        // 然后利用RouterFactory根据url生成各个类型的Router
-        // 这里生产的routers已经是真实可用的了，但是有个比较特殊的：
-        // 对于应用条件路由和服务条件路由对于的Router对象，对象内部已经有真实可用的数据了（数据已经从配置中心得到了）
-        // 但是对于标签路由则没有，它暂时还相当于一个没有内容的对象（还没有从配置中心获取标签路由的数据）
-        List<Router> routers = extensionFactories.stream()
-                .map(factory -> factory.getRouter(url))
-                .collect(Collectors.toList());
-
-        // 把routers按priority进行排序
-        initWithRouters(routers);
+        List<RouterFactory> extensionFactories = ExtensionLoader.getExtensionLoader(RouterFactory.class).getActivateExtension(url, (String[]) null);
+        // 然后利用RouterFactory根据url生成各个类型的Router，这里生产的routers已经是真实可用的了，但是有个比较特殊的：
+        // 对于应用条件路由和服务条件路由对应的Router对象，对象内部已经有真实可用的数据了，数据已经从配置中心得到了
+        // 但是对于标签路由则没有，它暂时还相当于一个没有内容的对象，还没有从配置中心获取标签路由的数据
+        List<Router> routers = extensionFactories.stream().map(factory -> factory.getRouter(url)).collect(Collectors.toList());
+        initWithRouters(routers); // 把routers按priority进行排序
     }
 
     /**

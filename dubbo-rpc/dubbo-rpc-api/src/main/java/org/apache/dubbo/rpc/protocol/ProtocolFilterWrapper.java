@@ -54,33 +54,27 @@ public class ProtocolFilterWrapper implements Protocol {
         Invoker<T> last = invoker;
         // 根据url获取filter，根据url中的parameters取key为key的value所对应的filter，但是还会匹配group
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
-
         if (!filters.isEmpty()) {
             for (int i = filters.size() - 1; i >= 0; i--) {
                 final Filter filter = filters.get(i);
                 final Invoker<T> next = last;
                 last = new Invoker<T>() {
-
                     @Override
                     public Class<T> getInterface() {
                         return invoker.getInterface();
                     }
-
                     @Override
                     public URL getUrl() {
                         return invoker.getUrl();
                     }
-
                     @Override
                     public boolean isAvailable() {
                         return invoker.isAvailable();
                     }
-
                     @Override
                     public Result invoke(Invocation invocation) throws RpcException {
                         Result asyncResult;
-                        try {
-                            // 得到一个异步结果
+                        try {// 得到一个异步结果
                             asyncResult = filter.invoke(next, invocation);
                         } catch (Exception e) {
                             // onError callback
@@ -94,12 +88,10 @@ public class ProtocolFilterWrapper implements Protocol {
                         }
                         return asyncResult;
                     }
-
                     @Override
                     public void destroy() {
                         invoker.destroy();
                     }
-
                     @Override
                     public String toString() {
                         return invoker.toString();
@@ -107,7 +99,6 @@ public class ProtocolFilterWrapper implements Protocol {
                 };
             }
         }
-
         return new CallbackRegistrationInvoker<>(last, filters);
     }
 
@@ -145,26 +136,20 @@ public class ProtocolFilterWrapper implements Protocol {
      * https://github.com/apache/dubbo/pull/4127
      */
     static class CallbackRegistrationInvoker<T> implements Invoker<T> {
-
         private final Invoker<T> filterInvoker;
         private final List<Filter> filters;
-
         public CallbackRegistrationInvoker(Invoker<T> filterInvoker, List<Filter> filters) {
             this.filterInvoker = filterInvoker;
             this.filters = filters;
         }
-
         @Override
         public Result invoke(Invocation invocation) throws RpcException {
-            // 执行过滤器链
-            Result asyncResult = filterInvoker.invoke(invocation);
-
+            Result asyncResult = filterInvoker.invoke(invocation); // 执行过滤器链
             // 过滤器都执行完了之后，回调每个ListenableFilter过滤器的onResponse或onError方法
             asyncResult = asyncResult.whenCompleteWithContext((r, t) -> {
                 for (int i = filters.size() - 1; i >= 0; i--) {
                     Filter filter = filters.get(i);
-                    // onResponse callback
-                    if (filter instanceof ListenableFilter) {
+                    if (filter instanceof ListenableFilter) { // onResponse callback
                         Filter.Listener listener = ((ListenableFilter) filter).listener();
                         if (listener != null) {
                             if (t == null) {
